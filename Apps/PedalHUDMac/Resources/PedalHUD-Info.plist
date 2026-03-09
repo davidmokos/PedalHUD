@@ -27,7 +27,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>PedalHUD uses your webcam to composite the virtual camera stream.</string>
 	<key>SUFeedURL</key>
-	<string>https://github.com/davidmokos/pedalhud/releases/latest/download/appcast.xml</string>
+	<string>https://github.com/davidmokos/PedalHUD/releases/latest/download/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>idH1Tr88DF5UQ+04EY70cTtM3+WOIG7VTZnQePwtayY=</string>
 	<key>SUEnableAutomaticChecks</key>

@@ -6,7 +6,21 @@ A macOS virtual camera that overlays live cycling metrics — watts, heart rate,
 
 PedalHUD connects to your Wahoo trainer and heart-rate sensor via Bluetooth, composites real-time metrics over your webcam video, and exposes the result as a system-level virtual camera through a CoreMediaIO camera extension.
 
-## Getting started
+## Download
+
+Grab the latest release from the [Releases page](https://github.com/davidmokos/PedalHUD/releases). Download the ZIP, unzip it, and drag **PedalHUD.app** to your Applications folder. The app checks for updates automatically via Sparkle.
+
+## Usage
+
+1. Launch **PedalHUD** from Applications.
+2. Grant Bluetooth and camera permissions when prompted.
+3. Connect your Wahoo trainer — it will appear in the device list automatically.
+4. Click **Activate Virtual Camera** to install the system extension (requires admin approval on first use).
+5. Open Zoom, Google Meet, or any video app and select **PedalHUD Camera** from the camera list.
+
+Your live watts, heart rate, and cadence will appear as an overlay on your webcam feed.
+
+## Building from source
 
 ### Prerequisites
 
@@ -20,7 +34,7 @@ PedalHUD connects to your Wahoo trainer and heart-rate sensor via Bluetooth, com
 3. Open `PedalHUD/PedalHUD.xcodeproj` in Xcode.
 4. Build and run the **PedalHUD** scheme.
 
-### Validate the shared core
+### Run tests
 
 ```bash
 swift test
@@ -40,7 +54,7 @@ See [docs/architecture.md](docs/architecture.md) for the full data flow.
 
 ## Releases
 
-Tagged releases are built, signed, notarized, and published automatically via GitHub Actions. The app includes Sparkle for automatic updates.
+Tagged releases are built, signed, notarized, and published automatically via GitHub Actions. The app includes [Sparkle](https://sparkle-project.org) for automatic updates — once installed, you'll receive new versions without needing to visit GitHub again.
 
 ## License
 
