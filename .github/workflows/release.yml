@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+        run: sudo xcode-select -s /Applications/Xcode_16.1.app/Contents/Developer
 
       - name: Extract version from tag
         id: version
@@ -80,8 +80,7 @@ jobs:
             DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
             BUNDLE_ID_PREFIX="$BUNDLE_ID_PREFIX" \
             ARCHS=arm64 \
-            ONLY_ACTIVE_ARCH=NO \
-            SWIFT_COMPILATION_MODE=singlefile
+            ONLY_ACTIVE_ARCH=NO
 
       - name: Export for Developer ID distribution
         id: prepare
