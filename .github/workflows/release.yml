@@ -97,6 +97,10 @@ jobs:
           MAIN_ENTITLEMENTS="Apps/PedalHUDMac/Resources/PedalHUD.entitlements"
           EXT_ENTITLEMENTS="Apps/PedalHUDCameraExtension/Resources/PedalHUDCameraExtension.entitlements"
 
+          # Remove development provisioning profiles — they were embedded by xcodebuild archive
+          # for the "Apple Development" identity and conflict with the Developer ID re-signing
+          find "$APP_PATH" -name "embedded.provisionprofile" -delete -print
+
           # Sign all standalone executables inside frameworks (e.g., Sparkle's Autoupdate)
           find "$APP_PATH" -type f -perm +111 | while read binary; do
             if file "$binary" | grep -q "Mach-O"; then
