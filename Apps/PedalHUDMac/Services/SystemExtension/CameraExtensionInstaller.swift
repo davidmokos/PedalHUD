@@ -96,7 +96,7 @@ final class CameraExtensionInstaller: NSObject {
     }
 }
 
-extension CameraExtensionInstaller: OSSystemExtensionRequestDelegate {
+extension CameraExtensionInstaller: @preconcurrency OSSystemExtensionRequestDelegate {
     func requestNeedsUserApproval(_ request: OSSystemExtensionRequest) {
         onStatusChange?("Approve the virtual camera in System Settings > Privacy & Security. The request will finish after approval.")
     }

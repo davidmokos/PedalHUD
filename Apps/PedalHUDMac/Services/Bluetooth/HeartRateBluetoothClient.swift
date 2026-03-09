@@ -126,7 +126,7 @@ final class HeartRateBluetoothClient: NSObject {
     }
 }
 
-extension HeartRateBluetoothClient: CBCentralManagerDelegate {
+extension HeartRateBluetoothClient: @preconcurrency CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         updateState(centralStateDescription(central.state))
         onBluetoothStateChanged?(central.state == .poweredOn)
@@ -186,7 +186,7 @@ extension HeartRateBluetoothClient: CBCentralManagerDelegate {
     }
 }
 
-extension HeartRateBluetoothClient: CBPeripheralDelegate {
+extension HeartRateBluetoothClient: @preconcurrency CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         if let error {
             updateState("Service discovery failed: \(error.localizedDescription)")
