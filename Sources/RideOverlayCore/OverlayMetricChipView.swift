@@ -4,49 +4,33 @@ struct OverlayMetricChipView: View {
     let item: OverlayHUDModel.Item
 
     var body: some View {
-        HStack(spacing: 10) {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: item.accentColors,
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 28, height: 28)
-                .overlay(
-                    Image(systemName: item.symbolName)
-                        .font(.system(size: 11, weight: .black))
-                        .foregroundStyle(.white)
-                )
+        HStack(alignment: .firstTextBaseline, spacing: 5) {
+            Text(item.displayValue)
+                .font(.system(size: 34, weight: .heavy, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .layoutPriority(1)
 
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(item.displayValue)
-                    .font(.system(size: 28, weight: .heavy, design: .rounded))
-                    .monospacedDigit()
-                    .foregroundStyle(.white)
+            if let unit = item.displayUnit {
+                Text(unit)
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.82))
                     .lineLimit(1)
-                    .minimumScaleFactor(0.68)
-
-                if let unit = item.displayUnit {
-                    Text(unit)
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.72))
-                        .lineLimit(1)
-                }
+                    .padding(.bottom, 2)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, minHeight: 74, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 11)
+        .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(
                     LinearGradient(
                         colors: [
-                            item.accentColors[0].opacity(0.28),
-                            Color.black.opacity(0.36),
+                            item.accentColors[0].opacity(0.95),
+                            item.accentColors.last?.opacity(0.78) ?? item.accentColors[0].opacity(0.78),
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -55,7 +39,7 @@ struct OverlayMetricChipView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(.white.opacity(0.08))
+                .strokeBorder(.white.opacity(0.12))
         )
         .fixedSize(horizontal: false, vertical: true)
     }

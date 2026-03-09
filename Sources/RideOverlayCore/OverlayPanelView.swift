@@ -8,13 +8,13 @@ public struct OverlayPanelView: View {
     }
 
     public var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             ForEach(metricItems) { item in
                 OverlayMetricChipView(item: item)
                     .layoutPriority(1)
             }
         }
-        .padding(10)
+        .padding(8)
         .background(
             RoundedRectangle(cornerRadius: 30, style: .continuous)
                 .fill(
