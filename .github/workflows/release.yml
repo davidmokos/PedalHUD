@@ -54,6 +54,13 @@ jobs:
           mkdir -p ~/private_keys
           echo -n "$API_KEY_BASE64" | base64 --decode > ~/private_keys/AuthKey_${API_KEY_ID}.p8
 
+      - name: Create Local.xcconfig
+        run: |
+          cat > Config/Local.xcconfig << EOF
+          DEVELOPMENT_TEAM = ${{ secrets.APPLE_TEAM_ID }}
+          BUNDLE_ID_PREFIX = ${{ secrets.BUNDLE_ID_PREFIX }}
+          EOF
+
       - name: Resolve packages
         run: |
           xcodebuild -resolvePackageDependencies \
