@@ -97,7 +97,7 @@ final class RideOverlayFrameRenderer: @unchecked Sendable {
     ) -> CIImage {
         let renderPanel = {
             MainActor.assumeIsolated {
-                let panelWidth = min(max(canvasSize.width * 0.28, 280), 360)
+                let panelWidth = min(max(canvasSize.width * 0.22, 240), 300)
                 let panel = OverlayPanelView(model: hud)
                     .frame(width: panelWidth)
 

@@ -18,7 +18,7 @@ struct MetricsPreviewCard: View {
                 previewBackground
 
                 OverlayPanelView(model: hud)
-                    .frame(width: 320)
+                    .frame(width: 290)
                     .padding(panelPadding(for: hud.placement, inset: configuration.cornerInset))
             }
             .scaleEffect(x: configuration.mirrorsOutput ? -1 : 1, y: 1)

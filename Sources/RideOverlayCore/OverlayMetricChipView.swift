@@ -4,7 +4,7 @@ struct OverlayMetricChipView: View {
     let item: OverlayHUDModel.Item
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 9) {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(
                     LinearGradient(
@@ -13,14 +13,14 @@ struct OverlayMetricChipView: View {
                         endPoint: .bottomTrailing
                     )
                 )
-                .frame(width: 36, height: 36)
+                .frame(width: 30, height: 30)
                 .overlay(
                     Image(systemName: item.symbolName)
-                        .font(.system(size: 14, weight: .black))
+                        .font(.system(size: 12, weight: .black))
                         .foregroundStyle(.white)
                 )
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(item.title.uppercased())
                     .font(.system(.caption2, design: .rounded).weight(.bold))
                     .tracking(1)
@@ -45,8 +45,8 @@ struct OverlayMetricChipView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 11)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(Color.black.opacity(0.28))

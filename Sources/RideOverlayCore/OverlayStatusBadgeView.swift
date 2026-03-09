@@ -4,20 +4,28 @@ struct OverlayStatusBadgeView: View {
     let freshness: MetricFreshness
 
     var body: some View {
-        Label(title, systemImage: symbolName)
-            .font(.system(.caption2, design: .rounded).weight(.bold))
-            .foregroundStyle(.white.opacity(0.94))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(backgroundColor.opacity(0.28))
-            )
-            .overlay(
-                Capsule(style: .continuous)
-                    .strokeBorder(.white.opacity(0.14))
-            )
-            .accessibilityHidden(true)
+        HStack(spacing: 6) {
+            Circle()
+                .fill(backgroundColor)
+                .frame(width: 8, height: 8)
+
+            Text(title)
+                .lineLimit(1)
+        }
+        .font(.system(.caption2, design: .rounded).weight(.bold))
+        .foregroundStyle(.white.opacity(0.94))
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(
+            Capsule(style: .continuous)
+                .fill(.black.opacity(0.26))
+        )
+        .overlay(
+            Capsule(style: .continuous)
+                .strokeBorder(.white.opacity(0.12))
+        )
+        .fixedSize()
+        .accessibilityHidden(true)
     }
 
     private var title: String {
@@ -28,17 +36,6 @@ struct OverlayStatusBadgeView: View {
             "RECENT"
         case .stale:
             "STALE"
-        }
-    }
-
-    private var symbolName: String {
-        switch freshness {
-        case .live:
-            "dot.radiowaves.left.and.right"
-        case .aging:
-            "clock.fill"
-        case .stale:
-            "exclamationmark.triangle.fill"
         }
     }
 

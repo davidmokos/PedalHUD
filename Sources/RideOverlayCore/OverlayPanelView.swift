@@ -8,24 +8,18 @@ public struct OverlayPanelView: View {
     }
 
     public var body: some View {
-        VStack(spacing: 0) {
-            OverlayHeroMetricView(
-                item: heroItem,
-                freshness: model.freshness
-            )
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
+        HStack(spacing: 10) {
+            OverlayStatusBadgeView(freshness: model.freshness)
 
-            if !secondaryItems.isEmpty {
-                HStack(spacing: 10) {
-                    ForEach(secondaryItems) { item in
-                        OverlayMetricChipView(item: item)
-                    }
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 12)
+            OverlayHeroMetricView(item: heroItem)
+                .layoutPriority(1)
+
+            ForEach(secondaryItems) { item in
+                OverlayMetricChipView(item: item)
+                    .layoutPriority(1)
             }
         }
+        .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 30, style: .continuous)
                 .fill(
@@ -43,7 +37,7 @@ public struct OverlayPanelView: View {
             RoundedRectangle(cornerRadius: 30, style: .continuous)
                 .strokeBorder(.white.opacity(0.12))
         )
-        .shadow(color: .black.opacity(0.32), radius: 26, y: 14)
+        .shadow(color: .black.opacity(0.28), radius: 22, y: 12)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.accessibilityLabel)
     }

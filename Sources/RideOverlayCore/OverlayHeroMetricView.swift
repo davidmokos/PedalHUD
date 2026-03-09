@@ -2,7 +2,6 @@ import SwiftUI
 
 struct OverlayHeroMetricView: View {
     let item: OverlayHUDModel.Item
-    let freshness: MetricFreshness
 
     var body: some View {
         ZStack {
@@ -29,23 +28,14 @@ struct OverlayHeroMetricView: View {
                 )
                 .blendMode(.screen)
 
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 10) {
-                    Label(item.shortLabel, systemImage: item.symbolName)
-                        .font(.system(.caption, design: .rounded).weight(.bold))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 7)
-                        .background(.black.opacity(0.18), in: Capsule(style: .continuous))
+            VStack(alignment: .leading, spacing: 7) {
+                Label(item.shortLabel, systemImage: item.symbolName)
+                    .font(.system(.caption2, design: .rounded).weight(.bold))
+                    .foregroundStyle(.white.opacity(0.82))
 
-                    Spacer(minLength: 8)
-
-                    OverlayStatusBadgeView(freshness: freshness)
-                }
-
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 5) {
                     Text(item.displayValue)
-                        .font(.system(size: 50, weight: .black, design: .rounded))
+                        .font(.system(size: 34, weight: .black, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(.white)
                         .lineLimit(1)
@@ -53,24 +43,20 @@ struct OverlayHeroMetricView: View {
 
                     if let unit = item.displayUnit {
                         Text(unit)
-                            .font(.system(.title3, design: .rounded).weight(.heavy))
+                            .font(.system(.caption, design: .rounded).weight(.heavy))
                             .foregroundStyle(.white.opacity(0.92))
                     }
                 }
-
-                Text(item.title.uppercased())
-                    .font(.system(.caption, design: .rounded).weight(.bold))
-                    .tracking(1.2)
-                    .foregroundStyle(.white.opacity(0.82))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
         }
-        .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .strokeBorder(.white.opacity(0.16))
         )
-        .shadow(color: .black.opacity(0.24), radius: 18, y: 10)
+        .shadow(color: .black.opacity(0.2), radius: 14, y: 8)
     }
 }
