@@ -1,0 +1,11 @@
+// Shared build settings for PedalHUD
+// Developer-specific overrides go in Local.xcconfig (gitignored)
+
+// Defaults for open-source contributors (ad-hoc signing)
+DEVELOPMENT_TEAM =
+BUNDLE_ID_PREFIX = com.example.pedalhud
+CODE_SIGN_STYLE = Automatic
+APP_GROUP = group.$(BUNDLE_ID_PREFIX)
+
+// Local overrides (loaded last so they take precedence)
+#include? "Local.xcconfig"

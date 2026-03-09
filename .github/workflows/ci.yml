@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+
+      - name: Run tests
+        run: swift test
+
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+
+      - name: Build
+        run: |
+          xcodebuild \
+            -project PedalHUD/PedalHUD.xcodeproj \
+            -scheme PedalHUD \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -derivedDataPath .build/xcode \
+            CODE_SIGN_IDENTITY=- \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_ENTITLEMENTS= \
+            PROVISIONING_PROFILE_SPECIFIER= \
+            MACOSX_DEPLOYMENT_TARGET=15.0 \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            build | tee /dev/stderr | tail -5
