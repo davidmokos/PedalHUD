@@ -1,7 +1,8 @@
 import Combine
-import Sparkle
+@preconcurrency import Sparkle
 import SwiftUI
 
+@MainActor
 final class UpdaterController: ObservableObject {
     let updater: SPUUpdater
 
