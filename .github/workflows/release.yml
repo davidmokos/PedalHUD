@@ -95,8 +95,8 @@ jobs:
           APP_PATH=".build/PedalHUD.xcarchive/Products/Applications/PedalHUD.app"
           IDENTITY="Developer ID Application: DCTR Inc. (${{ secrets.APPLE_TEAM_ID }})"
 
-          # Find and sign all nested code first (frameworks, extensions, helpers)
-          find "$APP_PATH" -type d -name "*.framework" -o -name "*.systemextension" -o -name "*.xpc" -o -name "*.appex" | while read component; do
+          # Find all signable bundles and sort by depth (deepest first)
+          find "$APP_PATH" -type d \( -name "*.framework" -o -name "*.systemextension" -o -name "*.xpc" -o -name "*.appex" \) | awk '{print length, $0}' | sort -rn | cut -d' ' -f2- | while read component; do
             echo "Signing: $component"
             codesign --force --options runtime --timestamp --sign "$IDENTITY" "$component"
           done
@@ -107,7 +107,7 @@ jobs:
             codesign --force --options runtime --timestamp --sign "$IDENTITY" "$lib"
           done
 
-          # Sign the main app
+          # Sign the main app last
           codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP_PATH"
 
           echo "Verifying signature..."
