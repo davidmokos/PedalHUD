@@ -61,6 +61,21 @@ jobs:
           BUNDLE_ID_PREFIX = ${{ secrets.BUNDLE_ID_PREFIX }}
           EOF
 
+      - name: Install provisioning profiles
+        env:
+          MAIN_PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE_MAIN_BASE64 }}
+          EXT_PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE_EXT_BASE64 }}
+        run: |
+          mkdir -p Config/profiles
+          echo -n "$MAIN_PROFILE_BASE64" | base64 --decode > Config/profiles/PedalHUD_Developer_ID.provisionprofile
+          echo -n "$EXT_PROFILE_BASE64" | base64 --decode > Config/profiles/PedalHUD_Camera_extension_Developer_ID.provisionprofile
+          # Also install to system location for xcodebuild
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          MAIN_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i Config/profiles/PedalHUD_Developer_ID.provisionprofile))
+          EXT_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i Config/profiles/PedalHUD_Camera_extension_Developer_ID.provisionprofile))
+          cp Config/profiles/PedalHUD_Developer_ID.provisionprofile ~/Library/MobileDevice/Provisioning\ Profiles/${MAIN_UUID}.provisionprofile
+          cp Config/profiles/PedalHUD_Camera_extension_Developer_ID.provisionprofile ~/Library/MobileDevice/Provisioning\ Profiles/${EXT_UUID}.provisionprofile
+
       - name: Resolve packages
         run: |
           xcodebuild -resolvePackageDependencies \
@@ -100,6 +115,13 @@ jobs:
           # Remove development provisioning profiles — they were embedded by xcodebuild archive
           # for the "Apple Development" identity and conflict with the Developer ID re-signing
           find "$APP_PATH" -name "embedded.provisionprofile" -delete -print
+
+          # Embed Developer ID provisioning profiles
+          cp Config/profiles/PedalHUD_Developer_ID.provisionprofile "$APP_PATH/Contents/embedded.provisionprofile"
+          EXT_PATH=$(find "$APP_PATH" -name "*.systemextension" -type d | head -1)
+          if [ -n "$EXT_PATH" ]; then
+            cp Config/profiles/PedalHUD_Camera_extension_Developer_ID.provisionprofile "$EXT_PATH/Contents/embedded.provisionprofile"
+          fi
 
           # Sign all standalone executables inside frameworks (e.g., Sparkle's Autoupdate)
           find "$APP_PATH" -type f -perm +111 | while read binary; do

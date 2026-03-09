@@ -5,3 +5,7 @@ DerivedData
 *.xcuserstate
 
 Config/Local.xcconfig
+Config/profiles/
+*.provisionprofile
+*.p12
+*.p8

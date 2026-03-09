@@ -3,3 +3,15 @@
 
 DEVELOPMENT_TEAM = YOUR_APPLE_TEAM_ID
 BUNDLE_ID_PREFIX = com.yourcompany.pedalhud
+
+// Also needed for releases:
+// 1. Provisioning profiles in Config/profiles/:
+//    - PedalHUD_Developer_ID.provisionprofile
+//    - PedalHUD_Camera_extension_Developer_ID.provisionprofile
+//    Download from https://developer.apple.com/account/resources/profiles
+//
+// 2. Notarization credentials (stored in macOS Keychain):
+//    xcrun notarytool store-credentials "notarytool" \
+//      --apple-id YOUR_APPLE_ID \
+//      --team-id YOUR_TEAM_ID
+//    (You'll be prompted for your app-specific password)
