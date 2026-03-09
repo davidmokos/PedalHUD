@@ -145,20 +145,22 @@ final class PedalHUDFrameRenderer: @unchecked Sendable {
         panelSize: CGSize,
         inset: Double
     ) -> CGPoint {
-        let x = switch placement {
+        let x: Double
+        switch placement {
         case .topLeading, .bottomLeading:
-            inset
+            x = inset
         case .bottomCenter:
-            (canvasSize.width - panelSize.width) / 2
+            x = (canvasSize.width - panelSize.width) / 2
         case .topTrailing, .bottomTrailing:
-            canvasSize.width - panelSize.width - inset
+            x = canvasSize.width - panelSize.width - inset
         }
 
-        let y = switch placement {
+        let y: Double
+        switch placement {
         case .topLeading, .topTrailing:
-            canvasSize.height - panelSize.height - inset
+            y = canvasSize.height - panelSize.height - inset
         case .bottomLeading, .bottomCenter, .bottomTrailing:
-            inset
+            y = inset
         }
 
         return CGPoint(x: x, y: y)
