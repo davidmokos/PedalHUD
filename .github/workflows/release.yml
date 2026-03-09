@@ -95,10 +95,12 @@ jobs:
           APP_PATH=".build/PedalHUD.xcarchive/Products/Applications/PedalHUD.app"
           IDENTITY="Developer ID Application: DCTR Inc. (${{ secrets.APPLE_TEAM_ID }})"
 
-          # Find all signable bundles and sort by depth (deepest first)
-          find "$APP_PATH" -type d \( -name "*.framework" -o -name "*.systemextension" -o -name "*.xpc" -o -name "*.appex" \) | awk '{print length, $0}' | sort -rn | cut -d' ' -f2- | while read component; do
-            echo "Signing: $component"
-            codesign --force --options runtime --timestamp --sign "$IDENTITY" "$component"
+          # Sign all standalone executables inside frameworks (e.g., Sparkle's Autoupdate)
+          find "$APP_PATH" -type f -perm +111 | while read binary; do
+            if file "$binary" | grep -q "Mach-O"; then
+              echo "Signing binary: $binary"
+              codesign --force --options runtime --timestamp --sign "$IDENTITY" "$binary"
+            fi
           done
 
           # Sign all dylibs
@@ -107,7 +109,18 @@ jobs:
             codesign --force --options runtime --timestamp --sign "$IDENTITY" "$lib"
           done
 
+          # Sign all bundles (deepest first): .app, .xpc, .appex, .systemextension, .framework
+          find "$APP_PATH" -type d \( -name "*.app" -o -name "*.framework" -o -name "*.systemextension" -o -name "*.xpc" -o -name "*.appex" \) | awk '{print length, $0}' | sort -rn | cut -d' ' -f2- | while read component; do
+            # Skip the main app itself — we sign it last
+            if [ "$component" = "$APP_PATH" ]; then
+              continue
+            fi
+            echo "Signing bundle: $component"
+            codesign --force --options runtime --timestamp --sign "$IDENTITY" "$component"
+          done
+
           # Sign the main app last
+          echo "Signing main app: $APP_PATH"
           codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP_PATH"
 
           echo "Verifying signature..."
