@@ -60,16 +60,16 @@ jobs:
             -project PedalHUD/PedalHUD.xcodeproj \
             -scheme PedalHUD
 
-      - name: Build release
+      - name: Archive
         env:
           BUNDLE_ID_PREFIX: ${{ secrets.BUNDLE_ID_PREFIX }}
         run: |
-          xcodebuild \
+          xcodebuild archive \
             -project PedalHUD/PedalHUD.xcodeproj \
             -scheme PedalHUD \
             -configuration Release \
             -destination 'platform=macOS' \
-            -derivedDataPath .build/xcode \
+            -archivePath .build/PedalHUD.xcarchive \
             -allowProvisioningUpdates \
             -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8 \
             -authenticationKeyID ${{ secrets.APP_STORE_CONNECT_KEY_ID }} \
@@ -77,24 +77,41 @@ jobs:
             MARKETING_VERSION="${{ steps.version.outputs.version }}" \
             CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
             MACOSX_DEPLOYMENT_TARGET=15.0 \
-            CODE_SIGN_IDENTITY="Developer ID Application" \
             DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
-            BUNDLE_ID_PREFIX="$BUNDLE_ID_PREFIX" \
-            build
+            BUNDLE_ID_PREFIX="$BUNDLE_ID_PREFIX"
 
-      - name: Prepare app for distribution
+      - name: Export for Developer ID distribution
         id: prepare
         run: |
-          APP_PATH=".build/xcode/Build/Products/Release/PedalHUD.app"
-          ZIP_NAME="PedalHUD-${{ steps.version.outputs.version }}.zip"
-          DMG_NAME="PedalHUD-${{ steps.version.outputs.version }}.dmg"
+          cat > ExportOptions.plist << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>developer-id</string>
+            <key>teamID</key>
+            <string>${{ secrets.APPLE_TEAM_ID }}</string>
+          </dict>
+          </plist>
+          PLIST
 
-          # Create ZIP for Sparkle
+          xcodebuild -exportArchive \
+            -archivePath .build/PedalHUD.xcarchive \
+            -exportPath .build/export \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.APP_STORE_CONNECT_KEY_ID }} \
+            -authenticationKeyIssuerID ${{ secrets.APP_STORE_CONNECT_KEY_ISSUER_ID }}
+
+          APP_PATH=".build/export/PedalHUD.app"
+          ZIP_NAME="PedalHUD-${{ steps.version.outputs.version }}.zip"
+
           ditto -c -k --keepParent "$APP_PATH" "$ZIP_NAME"
 
           echo "app_path=$APP_PATH" >> "$GITHUB_OUTPUT"
           echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
-          echo "zip_path=$(pwd)/$ZIP_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Notarize app
         env:
@@ -120,8 +137,8 @@ jobs:
         env:
           SPARKLE_EDDSA_KEY: ${{ secrets.SPARKLE_EDDSA_PRIVATE_KEY }}
         run: |
-          # Find Sparkle's sign_update tool from SPM build artifacts
-          SIGN_UPDATE=$(find .build/xcode -name "sign_update" -type f | head -1)
+          # Find Sparkle's sign_update tool from build artifacts
+          SIGN_UPDATE=$(find .build -name "sign_update" -type f | head -1)
 
           if [ -z "$SIGN_UPDATE" ]; then
             echo "sign_update not found in build artifacts, downloading Sparkle tools..."
