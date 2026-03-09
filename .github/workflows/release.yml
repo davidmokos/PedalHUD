@@ -80,8 +80,7 @@ jobs:
             DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
             BUNDLE_ID_PREFIX="$BUNDLE_ID_PREFIX" \
             ARCHS=arm64 \
-            ONLY_ACTIVE_ARCH=NO \
-            SWIFT_OPTIMIZATION_LEVEL=-Onone
+            ONLY_ACTIVE_ARCH=NO
 
       - name: Export for Developer ID distribution
         id: prepare
