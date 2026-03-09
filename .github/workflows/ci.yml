@@ -34,9 +34,11 @@ jobs:
             -configuration Debug \
             -destination 'platform=macOS' \
             -derivedDataPath .build/xcode \
-            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_IDENTITY=- \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGN_ENTITLEMENTS="" \
+            CODE_SIGN_ENTITLEMENTS= \
+            PROVISIONING_PROFILE_SPECIFIER= \
             MACOSX_DEPLOYMENT_TARGET=15.0 \
-            build
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            build | tee /dev/stderr | tail -5

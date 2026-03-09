@@ -12,6 +12,16 @@ private final class StreamEndpoint: @unchecked Sendable {
     }
 }
 
+private struct FrameEmitContext: @unchecked Sendable {
+    let metricsReader: PedalHUDMetricsReader
+    let overlayConfigurationStore: SharedOverlayConfigurationStore
+    let renderer: PedalHUDFrameRenderer
+    let captureSource: PedalHUDCameraCaptureSource
+    let stream: StreamEndpoint
+    let videoDescription: CMFormatDescription
+    let frameDuration: CMTime
+}
+
 final class PedalHUDCameraDeviceSource: NSObject, CMIOExtensionDeviceSource {
     private(set) var device: CMIOExtensionDevice!
 
@@ -105,19 +115,18 @@ final class PedalHUDCameraDeviceSource: NSObject, CMIOExtensionDeviceSource {
 
         let timer = DispatchSource.makeTimerSource(queue: streamingQueue)
         let streamEndpoint = StreamEndpoint(stream: stream)
+        let context = FrameEmitContext(
+            metricsReader: metricsReader,
+            overlayConfigurationStore: overlayConfigurationStore,
+            renderer: renderer,
+            captureSource: captureSource,
+            stream: streamEndpoint,
+            videoDescription: videoDescription,
+            frameDuration: frameDuration
+        )
         timer.schedule(deadline: .now(), repeating: .milliseconds(33))
         timer.setEventHandler {
-            [metricsReader, overlayConfigurationStore, renderer, captureSource, streamEndpoint, videoDescription, frameDuration]
-            in
-            Self.emitFrame(
-                metricsReader: metricsReader,
-                configuration: overlayConfigurationStore.load(),
-                renderer: renderer,
-                captureSource: captureSource,
-                stream: streamEndpoint,
-                videoDescription: videoDescription,
-                frameDuration: frameDuration
-            )
+            Self.emitFrame(context)
         }
         streamTimer = timer
         timer.resume()
@@ -132,30 +141,22 @@ final class PedalHUDCameraDeviceSource: NSObject, CMIOExtensionDeviceSource {
         captureSource.stop()
     }
 
-    private static func emitFrame(
-        metricsReader: PedalHUDMetricsReader,
-        configuration: OverlayConfiguration,
-        renderer: PedalHUDFrameRenderer,
-        captureSource: PedalHUDCameraCaptureSource,
-        stream: StreamEndpoint,
-        videoDescription: CMFormatDescription,
-        frameDuration: CMTime
-    ) {
-        let metrics = metricsReader.latestMetrics()
-        let inputFrame = captureSource.currentFrame()
+    private static func emitFrame(_ ctx: FrameEmitContext) {
+        let metrics = ctx.metricsReader.latestMetrics()
+        let inputFrame = ctx.captureSource.currentFrame()
 
-        guard let pixelBuffer = renderer.makeFrame(
+        guard let pixelBuffer = ctx.renderer.makeFrame(
             width: 1280,
             height: 720,
             metrics: metrics,
-            configuration: configuration,
+            configuration: ctx.overlayConfigurationStore.load(),
             inputPixelBuffer: inputFrame
         ) else {
             return
         }
 
         var timing = CMSampleTimingInfo(
-            duration: frameDuration,
+            duration: ctx.frameDuration,
             presentationTimeStamp: CMClockGetTime(CMClockGetHostTimeClock()),
             decodeTimeStamp: .invalid
         )
@@ -166,13 +167,13 @@ final class PedalHUDCameraDeviceSource: NSObject, CMIOExtensionDeviceSource {
             dataReady: true,
             makeDataReadyCallback: nil,
             refcon: nil,
-            formatDescription: videoDescription,
+            formatDescription: ctx.videoDescription,
             sampleTiming: &timing,
             sampleBufferOut: &sampleBuffer
         )
 
         if status == noErr, let sampleBuffer {
-            stream.stream.send(
+            ctx.stream.stream.send(
                 sampleBuffer,
                 discontinuity: [],
                 hostTimeInNanoseconds: UInt64(timing.presentationTimeStamp.seconds * Double(NSEC_PER_SEC))
