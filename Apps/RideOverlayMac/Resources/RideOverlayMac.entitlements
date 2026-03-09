@@ -8,11 +8,13 @@
 	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>V3MA6M9H6Q.ai.cognitic.rideoverlay</string>
+		<string>group.cz.dctr.trainercast</string>
 	</array>
 	<key>com.apple.security.device.bluetooth</key>
 	<true/>
 	<key>com.apple.security.device.camera</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
 	<true/>
 </dict>
 </plist>

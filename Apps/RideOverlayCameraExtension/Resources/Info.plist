@@ -29,5 +29,7 @@
 	<string>Ride Overlay Camera captures the physical webcam so it can publish the composited virtual camera feed.</string>
 	<key>NSSystemExtensionUsageDescription</key>
 	<string>Ride Overlay installs a virtual camera so video apps can use the composited webcam feed.</string>
+	<key>RideOverlayAppGroup</key>
+	<string>$(APP_GROUP)</string>
 </dict>
 </plist>

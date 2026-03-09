@@ -26,5 +26,13 @@
 	<string>Ride Overlay reads nearby trainer and heart-rate data so it can publish the current watts and pulse in the video overlay.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Ride Overlay uses your webcam to composite the virtual camera stream.</string>
+	<key>SUFeedURL</key>
+	<string>https://github.com/davidmokos/wahoo-webcam/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>idH1Tr88DF5UQ+04EY70cTtM3+WOIG7VTZnQePwtayY=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>RideOverlayAppGroup</key>
+	<string>$(APP_GROUP)</string>
 </dict>
 </plist>

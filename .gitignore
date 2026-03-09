@@ -4,3 +4,4 @@ DerivedData
 *.xcuserdatad
 *.xcuserstate
 
+Config/Local.xcconfig

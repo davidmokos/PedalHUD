@@ -1,0 +1,188 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          echo "version=$TAG" >> "$GITHUB_OUTPUT"
+          # Build number from run number
+          echo "build=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Import code signing certificate
+        env:
+          P12_BASE64: ${{ secrets.DEVELOPER_ID_APPLICATION_CERTIFICATE_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.DEVELOPER_ID_APPLICATION_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH=$RUNNER_TEMP/certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          echo -n "$P12_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+      - name: Resolve packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project RideOverlay/RideOverlay.xcodeproj \
+            -scheme RideOverlay
+
+      - name: Build release
+        run: |
+          xcodebuild \
+            -project RideOverlay/RideOverlay.xcodeproj \
+            -scheme RideOverlay \
+            -configuration Release \
+            -destination 'platform=macOS' \
+            -derivedDataPath .build/xcode \
+            -allowProvisioningUpdates \
+            MARKETING_VERSION="${{ steps.version.outputs.version }}" \
+            CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
+            build
+
+      - name: Prepare app for distribution
+        id: prepare
+        run: |
+          APP_PATH=".build/xcode/Build/Products/Release/RideOverlay.app"
+          ZIP_NAME="RideOverlay-${{ steps.version.outputs.version }}.zip"
+          DMG_NAME="RideOverlay-${{ steps.version.outputs.version }}.dmg"
+
+          # Create ZIP for Sparkle
+          ditto -c -k --keepParent "$APP_PATH" "$ZIP_NAME"
+
+          echo "app_path=$APP_PATH" >> "$GITHUB_OUTPUT"
+          echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
+          echo "zip_path=$(pwd)/$ZIP_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Notarize app
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcrun notarytool submit "${{ steps.prepare.outputs.zip_name }}" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_ID_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+          # Staple the notarization ticket to the app
+          xcrun stapler staple "${{ steps.prepare.outputs.app_path }}"
+
+          # Re-create the ZIP after stapling
+          rm "${{ steps.prepare.outputs.zip_name }}"
+          ditto -c -k --keepParent "${{ steps.prepare.outputs.app_path }}" "${{ steps.prepare.outputs.zip_name }}"
+
+      - name: Sign update with Sparkle EdDSA key
+        id: sparkle_sign
+        env:
+          SPARKLE_EDDSA_KEY: ${{ secrets.SPARKLE_EDDSA_PRIVATE_KEY }}
+        run: |
+          # Find Sparkle's sign_update tool from SPM build artifacts
+          SIGN_UPDATE=$(find .build/xcode -name "sign_update" -type f | head -1)
+
+          if [ -z "$SIGN_UPDATE" ]; then
+            echo "sign_update not found in build artifacts, downloading Sparkle tools..."
+            curl -sL "https://github.com/sparkle-project/Sparkle/releases/latest/download/Sparkle-2.7.5.tar.xz" | tar xJ -C /tmp
+            SIGN_UPDATE="/tmp/bin/sign_update"
+          fi
+
+          # Sign the update archive
+          SIGNATURE=$("$SIGN_UPDATE" "${{ steps.prepare.outputs.zip_name }}" --ed-key-file <(echo "$SPARKLE_EDDSA_KEY"))
+          echo "signature=$SIGNATURE" >> "$GITHUB_OUTPUT"
+          echo "Sparkle signature: $SIGNATURE"
+
+      - name: Generate appcast
+        env:
+          SPARKLE_SIGNATURE: ${{ steps.sparkle_sign.outputs.signature }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BUILD="${{ steps.version.outputs.build }}"
+          ZIP_NAME="${{ steps.prepare.outputs.zip_name }}"
+          DOWNLOAD_URL="https://github.com/davidmokos/wahoo-webcam/releases/download/v${VERSION}/${ZIP_NAME}"
+          PUB_DATE=$(date -R)
+
+          python3 -c "
+          import sys
+          xml = '''<?xml version=\"1.0\" encoding=\"utf-8\"?>
+          <rss version=\"2.0\" xmlns:sparkle=\"http://www.andymatuschak.org/xml-namespaces/sparkle\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\">
+            <channel>
+              <title>Ride Overlay</title>
+              <link>https://github.com/davidmokos/wahoo-webcam/releases</link>
+              <description>Most recent changes with links to updates.</description>
+              <language>en</language>
+              <item>
+                <title>Version {version}</title>
+                <pubDate>{pub_date}</pubDate>
+                <sparkle:version>{build}</sparkle:version>
+                <sparkle:shortVersionString>{version}</sparkle:shortVersionString>
+                <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+                <enclosure
+                  url=\"{download_url}\"
+                  {signature}
+                  type=\"application/octet-stream\"
+                />
+              </item>
+            </channel>
+          </rss>'''
+          print(xml.format(
+              version='$VERSION',
+              build='$BUILD',
+              pub_date='$PUB_DATE',
+              download_url='$DOWNLOAD_URL',
+              signature='$SPARKLE_SIGNATURE'
+          ))
+          " > appcast.xml
+
+          echo "Generated appcast.xml:"
+          cat appcast.xml
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Ride Overlay v${{ steps.version.outputs.version }}"
+          body: |
+            ## Ride Overlay v${{ steps.version.outputs.version }}
+
+            ### Installation
+            1. Download `${{ steps.prepare.outputs.zip_name }}`
+            2. Unzip and drag **RideOverlay.app** to your Applications folder
+            3. Future updates will be delivered automatically via Sparkle
+
+            ---
+            _Built from ${{ github.sha }}_
+          files: |
+            ${{ steps.prepare.outputs.zip_name }}
+            appcast.xml
+          draft: false
+          prerelease: false
+
+      - name: Clean up keychain
+        if: always()
+        run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
