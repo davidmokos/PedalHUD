@@ -5,36 +5,29 @@ struct SetupChecklistCard: View {
     let model: RideOverlayAppModel
 
     var body: some View {
-        GroupBox("Next Actions") {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Running from Xcode only launches the host app. To make the virtual camera appear in Photo Booth, Zoom, Meet, or Slack, copy the built app to /Applications, launch that copy, then click Activate Virtual Camera.")
-                    .foregroundStyle(.secondary)
-                    .textSelection(.enabled)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Button("Activate Virtual Camera", action: installCameraExtension)
+                Button("Request Camera Access", action: requestCameraAccess)
+            }
+            .controlSize(.small)
 
-                HStack(spacing: 12) {
-                    Button("Request Camera Access", systemImage: "video", action: requestCameraAccess)
-                    Button("Activate Virtual Camera", systemImage: "camera.badge.ellipsis", action: installCameraExtension)
-                }
-
-                HStack(spacing: 12) {
-                    Button("Scan for Wahoo", systemImage: "bolt.horizontal", action: connectTrainer)
-                    Button("Scan for HR Belt", systemImage: "heart", action: connectHeartRateMonitor)
-                    Button(mirrorButtonTitle, systemImage: "arrow.left.and.right", action: model.toggleMirrorOutput)
-                }
-
-                HStack(spacing: 12) {
-                    Button("Use Simulated Feed", systemImage: "play.fill", action: model.startSimulation)
-                    Button("Stop Simulated Feed", systemImage: "pause.fill", action: model.stopSimulation)
-                }
-
+            if !model.cameraStatus.isEmpty {
                 Text(model.cameraStatus)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
                     .textSelection(.enabled)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 6)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Color(nsColor: .separatorColor))
+        )
     }
 
     private func requestCameraAccess() {
@@ -47,21 +40,5 @@ struct SetupChecklistCard: View {
         Task {
             await model.installCameraExtension()
         }
-    }
-
-    private func connectTrainer() {
-        Task {
-            await model.connectTrainer()
-        }
-    }
-
-    private func connectHeartRateMonitor() {
-        Task {
-            await model.connectHeartRateMonitor()
-        }
-    }
-
-    private var mirrorButtonTitle: String {
-        model.overlayConfiguration.mirrorsOutput ? "Unmirror Output" : "Mirror Output"
     }
 }

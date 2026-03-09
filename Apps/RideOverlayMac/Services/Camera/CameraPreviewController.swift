@@ -49,6 +49,13 @@ final class CameraPreviewController {
                 self.session.stopRunning()
             }
 
+            if let input = self.currentInput {
+                self.session.beginConfiguration()
+                self.session.removeInput(input)
+                self.session.commitConfiguration()
+                self.currentInput = nil
+            }
+
             DispatchQueue.main.async {
                 self.onStateChange?("Preview stopped", false)
             }

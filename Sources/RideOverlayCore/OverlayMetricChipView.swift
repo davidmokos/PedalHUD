@@ -21,7 +21,7 @@ struct OverlayMetricChipView: View {
                     .padding(.bottom, 2)
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
+        .frame(minWidth: 100, minHeight: 60, alignment: .leading)
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .background(
@@ -29,8 +29,8 @@ struct OverlayMetricChipView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            item.accentColors[0].opacity(0.95),
-                            item.accentColors.last?.opacity(0.78) ?? item.accentColors[0].opacity(0.78),
+                            item.accentColors[0],
+                            item.accentColors.last?.opacity(0.92) ?? item.accentColors[0].opacity(0.92),
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing

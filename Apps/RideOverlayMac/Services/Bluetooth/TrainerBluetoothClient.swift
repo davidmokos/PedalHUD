@@ -6,17 +6,26 @@ import RideOverlayCore
 final class TrainerBluetoothClient: NSObject {
     var onMetrics: ((LiveMetrics) -> Void)?
     var onStateChange: ((String) -> Void)?
+    var onPeripheralsChanged: (([DiscoveredPeripheral]) -> Void)?
+    var onConnected: ((String) -> Void)?
+    var onDisconnected: (() -> Void)?
+    var onBluetoothStateChanged: ((Bool) -> Void)?
 
     private lazy var centralManager = CBCentralManager(delegate: self, queue: nil)
     private var connectedPeripheral: CBPeripheral?
     private var pendingPeripheral: CBPeripheral?
     private var shouldScanWhenPoweredOn = false
     private var latestCadence: Int?
+    private var discoveredMap: [UUID: (peripheral: CBPeripheral, info: DiscoveredPeripheral)] = [:]
 
     private let fitnessMachineServiceUUID = CBUUID(string: "1826")
     private let cyclingPowerServiceUUID = CBUUID(string: "1818")
     private let indoorBikeDataCharacteristicUUID = CBUUID(string: "2AD2")
     private let cyclingPowerMeasurementCharacteristicUUID = CBUUID(string: "2A63")
+
+    func initializeBluetooth() {
+        _ = centralManager
+    }
 
     func start() {
         shouldScanWhenPoweredOn = true
@@ -33,14 +42,21 @@ final class TrainerBluetoothClient: NSObject {
     func stop() {
         shouldScanWhenPoweredOn = false
         centralManager.stopScan()
+        discoveredMap.removeAll()
+        onPeripheralsChanged?([])
 
         if let connectedPeripheral {
             centralManager.cancelPeripheralConnection(connectedPeripheral)
         } else if let pendingPeripheral {
             centralManager.cancelPeripheralConnection(pendingPeripheral)
         } else {
-            updateState("Trainer scan stopped")
+            updateState("Not connected")
         }
+    }
+
+    func connectPeripheral(id: UUID) {
+        guard let entry = discoveredMap[id] else { return }
+        connect(to: entry.peripheral, name: entry.info.name)
     }
 
     private func startScan() {
@@ -48,7 +64,9 @@ final class TrainerBluetoothClient: NSObject {
             return
         }
 
-        updateState("Scanning for Wahoo / FTMS trainers")
+        discoveredMap.removeAll()
+        onPeripheralsChanged?([])
+        updateState("Searching for power meters")
         centralManager.scanForPeripherals(
             withServices: [
                 fitnessMachineServiceUUID,
@@ -70,7 +88,6 @@ final class TrainerBluetoothClient: NSObject {
 
     private func handleMeasurement(_ measurement: LiveMetrics) {
         onMetrics?(measurement)
-        updateState("Receiving watts from \(connectedPeripheral?.name ?? "trainer")")
     }
 
     private func parseCyclingPowerMeasurement(_ data: Data) -> Int? {
@@ -145,6 +162,11 @@ final class TrainerBluetoothClient: NSObject {
         onStateChange?(state)
     }
 
+    private func notifyPeripheralsChanged() {
+        let sorted = discoveredMap.values.map(\.info).sorted { $0.rssi > $1.rssi }
+        onPeripheralsChanged?(sorted)
+    }
+
     private func centralStateDescription(_ state: CBManagerState) -> String {
         switch state {
         case .unknown:
@@ -156,7 +178,7 @@ final class TrainerBluetoothClient: NSObject {
         case .unauthorized:
             "Bluetooth access is denied"
         case .poweredOff:
-            "Turn on Bluetooth to scan for the trainer"
+            "Turn on Bluetooth"
         case .poweredOn:
             "Bluetooth is ready"
         @unknown default:
@@ -168,6 +190,7 @@ final class TrainerBluetoothClient: NSObject {
 extension TrainerBluetoothClient: CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         updateState(centralStateDescription(central.state))
+        onBluetoothStateChanged?(central.state == .poweredOn)
 
         if central.state == .poweredOn, shouldScanWhenPoweredOn {
             startScan()
@@ -185,19 +208,21 @@ extension TrainerBluetoothClient: CBCentralManagerDelegate {
         }
 
         let advertisedName = advertisementData[CBAdvertisementDataLocalNameKey] as? String
-        let peripheralName = peripheral.name ?? advertisedName ?? "trainer"
-        let uppercasedName = peripheralName.uppercased()
-        let isPreferredTrainer = uppercasedName.contains("KICKR") || uppercasedName.contains("WAHOO")
+        let peripheralName = peripheral.name ?? advertisedName ?? "Trainer"
+        let rssi = RSSI.intValue
 
-        if isPreferredTrainer || pendingPeripheral == nil {
-            connect(to: peripheral, name: peripheralName)
-        }
+        let discovered = DiscoveredPeripheral(id: peripheral.identifier, name: peripheralName, rssi: rssi)
+        discoveredMap[peripheral.identifier] = (peripheral, discovered)
+        notifyPeripheralsChanged()
+        updateState("Found \(discoveredMap.count) trainer\(discoveredMap.count == 1 ? "" : "s")")
     }
 
     func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         pendingPeripheral = nil
         connectedPeripheral = peripheral
-        updateState("Connected to \(peripheral.name ?? "trainer"), discovering services")
+        let name = peripheral.name ?? "trainer"
+        updateState("Connected to \(name)")
+        onConnected?(name)
         peripheral.discoverServices([
             fitnessMachineServiceUUID,
             cyclingPowerServiceUUID,
@@ -207,25 +232,21 @@ extension TrainerBluetoothClient: CBCentralManagerDelegate {
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
         connectedPeripheral = nil
         pendingPeripheral = nil
+        shouldScanWhenPoweredOn = false
 
         if let error {
-            updateState("Trainer disconnected: \(error.localizedDescription)")
+            updateState("Disconnected: \(error.localizedDescription)")
         } else {
-            updateState("Trainer disconnected")
+            updateState("Disconnected")
         }
 
-        if shouldScanWhenPoweredOn, central.state == .poweredOn {
-            startScan()
-        }
+        onDisconnected?()
     }
 
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         pendingPeripheral = nil
-        updateState(error?.localizedDescription ?? "Failed to connect to the trainer")
-
-        if shouldScanWhenPoweredOn, central.state == .poweredOn {
-            startScan()
-        }
+        updateState(error?.localizedDescription ?? "Failed to connect")
+        onDisconnected?()
     }
 }
 
@@ -263,12 +284,12 @@ extension TrainerBluetoothClient: CBPeripheralDelegate {
             }
         }
 
-        updateState("Subscribed to trainer power updates")
+        updateState("Receiving power data")
     }
 
     func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
         if let error {
-            updateState("Trainer update failed: \(error.localizedDescription)")
+            updateState("Update failed: \(error.localizedDescription)")
             return
         }
 

@@ -8,8 +8,8 @@ import AVFoundation
 final class RideOverlayAppModel {
     var currentMetrics = LiveMetrics.empty
     var overlayConfiguration = OverlayConfiguration.defaultConfiguration
-    var trainerConnectionState = "Ready to scan"
-    var heartRateConnectionState = "Ready to scan"
+    var trainerConnectionState = "Not connected"
+    var heartRateConnectionState = "Not connected"
     var relayStatus = "Shared metrics store ready"
     var cameraStatus = "Move the built app to /Applications, then activate the virtual camera"
     var cameraPreviewStatus = "Grant camera access to preview and choose a camera"
@@ -18,15 +18,21 @@ final class RideOverlayAppModel {
     var previewAspect = OverlayPreviewAspect.square
     var isCameraPreviewRunning = false
 
+    var discoveredTrainers: [DiscoveredPeripheral] = []
+    var discoveredHeartRateMonitors: [DiscoveredPeripheral] = []
+    var connectedTrainerName: String?
+    var connectedHeartRateMonitorName: String?
+    var isScanningTrainers = false
+    var isScanningHeartRate = false
+    var isBluetoothAvailable = false
+
     @ObservationIgnored private let metricsWriter: SharedMetricsWriter
     @ObservationIgnored private let trainerClient: TrainerBluetoothClient
     @ObservationIgnored private let heartRateClient: HeartRateBluetoothClient
     @ObservationIgnored private let overlayConfigurationStore: SharedOverlayConfigurationStore
     @ObservationIgnored private let cameraSelectionStore: SharedCameraSelectionStore
     @ObservationIgnored private let cameraPreviewController: CameraPreviewController
-    @ObservationIgnored private let mockFeed = MockMetricsFeed()
     @ObservationIgnored private var cameraExtensionInstaller: CameraExtensionInstaller?
-    @ObservationIgnored private var simulationTask: Task<Void, Never>?
 
     init(
         metricsWriter: SharedMetricsWriter = SharedMetricsWriter(),
@@ -51,12 +57,54 @@ final class RideOverlayAppModel {
             self?.handleTrainerMetrics(metrics)
         }
 
+        self.trainerClient.onPeripheralsChanged = { [weak self] peripherals in
+            self?.discoveredTrainers = peripherals
+        }
+
+        self.trainerClient.onConnected = { [weak self] name in
+            self?.connectedTrainerName = name
+            self?.isScanningTrainers = false
+            self?.discoveredTrainers = []
+        }
+
+        self.trainerClient.onDisconnected = { [weak self] in
+            self?.connectedTrainerName = nil
+            self?.isScanningTrainers = false
+            self?.discoveredTrainers = []
+            self?.clearTrainerMetrics()
+        }
+
+        self.trainerClient.onBluetoothStateChanged = { [weak self] available in
+            self?.isBluetoothAvailable = available
+        }
+
         self.heartRateClient.onStateChange = { [weak self] state in
             self?.heartRateConnectionState = state
         }
 
         self.heartRateClient.onHeartRate = { [weak self] heartRate in
             self?.handleHeartRate(heartRate)
+        }
+
+        self.heartRateClient.onPeripheralsChanged = { [weak self] peripherals in
+            self?.discoveredHeartRateMonitors = peripherals
+        }
+
+        self.heartRateClient.onConnected = { [weak self] name in
+            self?.connectedHeartRateMonitorName = name
+            self?.isScanningHeartRate = false
+            self?.discoveredHeartRateMonitors = []
+        }
+
+        self.heartRateClient.onDisconnected = { [weak self] in
+            self?.connectedHeartRateMonitorName = nil
+            self?.isScanningHeartRate = false
+            self?.discoveredHeartRateMonitors = []
+            self?.clearHeartRateMetrics()
+        }
+
+        self.heartRateClient.onBluetoothStateChanged = { [weak self] available in
+            self?.isBluetoothAvailable = available
         }
 
         self.cameraPreviewController.onStateChange = { [weak self] state, isRunning in
@@ -80,26 +128,49 @@ final class RideOverlayAppModel {
         @unknown default:
             cameraPreviewStatus = "Camera access state is unknown."
         }
+
+        trainerClient.initializeBluetooth()
     }
 
-    func startSimulation() {
-        simulationTask?.cancel()
+    // MARK: - Trainer scanning
+
+    func startTrainerScan() {
+        isScanningTrainers = true
+        trainerClient.start()
+    }
+
+    func connectTrainer(id: UUID) {
+        trainerClient.connectPeripheral(id: id)
+    }
+
+    func disconnectTrainer() {
+        isScanningTrainers = false
+        connectedTrainerName = nil
+        discoveredTrainers = []
         trainerClient.stop()
-        trainerConnectionState = "Using simulated trainer feed"
-
-        simulationTask = Task {
-            for await metrics in mockFeed.stream(interval: .seconds(1)) {
-                currentMetrics = metrics
-                await persistMetrics(metrics, status: "Streaming simulated watts")
-            }
-        }
+        clearTrainerMetrics()
     }
 
-    func stopSimulation() {
-        simulationTask?.cancel()
-        simulationTask = nil
-        relayStatus = "Preview paused"
+    // MARK: - Heart rate scanning
+
+    func startHeartRateScan() {
+        isScanningHeartRate = true
+        heartRateClient.start()
     }
+
+    func connectHeartRateMonitor(id: UUID) {
+        heartRateClient.connectPeripheral(id: id)
+    }
+
+    func disconnectHeartRateMonitor() {
+        isScanningHeartRate = false
+        connectedHeartRateMonitorName = nil
+        discoveredHeartRateMonitors = []
+        heartRateClient.stop()
+        clearHeartRateMetrics()
+    }
+
+    // MARK: - Camera
 
     func requestCameraAccess() async {
         let coordinator = CameraAuthorizationCoordinator()
@@ -112,16 +183,6 @@ final class RideOverlayAppModel {
             isCameraPreviewRunning = false
             cameraPreviewStatus = "Camera access denied"
         }
-    }
-
-    func connectTrainer() async {
-        stopSimulation()
-        trainerClient.start()
-    }
-
-    func connectHeartRateMonitor() async {
-        stopSimulation()
-        heartRateClient.start()
     }
 
     func refreshAvailableCameras() {
@@ -192,6 +253,8 @@ final class RideOverlayAppModel {
         cameraExtensionInstaller = nil
     }
 
+    // MARK: - Metrics handling
+
     private func handleTrainerMetrics(_ metrics: LiveMetrics) {
         let mergedMetrics = LiveMetrics(
             watts: metrics.watts,
@@ -226,6 +289,30 @@ final class RideOverlayAppModel {
                 status: relayStatusDescription(for: mergedMetrics)
             )
         }
+    }
+
+    private func clearTrainerMetrics() {
+        let cleared = LiveMetrics(
+            watts: nil,
+            heartRate: currentMetrics.heartRate,
+            cadence: nil,
+            source: currentMetrics.source,
+            receivedAt: .now
+        )
+        currentMetrics = cleared
+        Task { await persistMetrics(cleared, status: relayStatusDescription(for: cleared)) }
+    }
+
+    private func clearHeartRateMetrics() {
+        let cleared = LiveMetrics(
+            watts: currentMetrics.watts,
+            heartRate: nil,
+            cadence: currentMetrics.cadence,
+            source: currentMetrics.source,
+            receivedAt: .now
+        )
+        currentMetrics = cleared
+        Task { await persistMetrics(cleared, status: relayStatusDescription(for: cleared)) }
     }
 
     private func persistMetrics(_ metrics: LiveMetrics, status: String) async {

@@ -58,15 +58,22 @@ final class RideOverlayFrameRenderer: @unchecked Sendable {
         let extent = CGRect(origin: .zero, size: canvasSize)
         let hud = builder.build(metrics: metrics, configuration: configuration)
         let background = backgroundImage(in: extent, using: inputPixelBuffer)
-        let compositedImage = overlayImage(
-            for: hud,
-            canvasSize: canvasSize,
-            configuration: configuration
-        )
-        .composited(over: background)
+
+        let baseImage: CIImage
+        if hud.items.isEmpty {
+            baseImage = background
+        } else {
+            baseImage = overlayImage(
+                for: hud,
+                canvasSize: canvasSize,
+                configuration: configuration
+            )
+            .composited(over: background)
+        }
+
         let outputImage = configuration.mirrorsOutput
-            ? mirroredImage(from: compositedImage, extent: extent)
-            : compositedImage
+            ? mirroredImage(from: baseImage, extent: extent)
+            : baseImage
 
         ciContext.render(outputImage, to: pixelBuffer)
     }

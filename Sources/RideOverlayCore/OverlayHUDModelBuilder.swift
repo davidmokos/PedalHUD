@@ -10,22 +10,22 @@ public struct OverlayHUDModelBuilder: Sendable {
     ) -> OverlayHUDModel {
         var items: [OverlayHUDModel.Item] = []
 
-        if configuration.showsWatts {
+        if configuration.showsWatts, let watts = metrics.watts {
             items.append(
                 .init(
                     kind: .watts,
                     title: "Watts",
-                    value: metrics.watts.map { "\($0) W" } ?? "-- W"
+                    value: "\(watts) W"
                 )
             )
         }
 
-        if configuration.showsHeartRate {
+        if configuration.showsHeartRate, let heartRate = metrics.heartRate {
             items.append(
                 .init(
                     kind: .heartRate,
                     title: "Heart Rate",
-                    value: metrics.heartRate.map { "\($0) bpm" } ?? "-- bpm"
+                    value: "\(heartRate) bpm"
                 )
             )
         }

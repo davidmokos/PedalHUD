@@ -1,93 +1,142 @@
+import AVFoundation
 import RideOverlayCore
 import SwiftUI
 
 struct CameraPreviewCard: View {
     @Bindable var model: RideOverlayAppModel
 
+    private let builder = OverlayHUDModelBuilder()
+
     var body: some View {
-        GroupBox("Camera Setup") {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack(alignment: .bottom, spacing: 16) {
-                    Picker("Camera", selection: $model.selectedCameraID) {
-                        if model.availableCameras.isEmpty {
-                            Text("No Cameras Found").tag(nil as String?)
-                        } else {
-                            ForEach(model.availableCameras) { camera in
-                                Text(camera.localizedName).tag(Optional(camera.id))
-                            }
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .frame(maxWidth: 360, alignment: .leading)
-                    .disabled(model.availableCameras.isEmpty)
-                    .onChange(of: model.selectedCameraID) { _, newValue in
-                        model.selectCamera(id: newValue)
-                    }
+        let hud = builder.build(metrics: model.currentMetrics, configuration: model.overlayConfiguration)
 
-                    Button("Refresh Cameras", systemImage: "arrow.clockwise", action: model.refreshAvailableCameras)
+        VStack(spacing: 0) {
+            cameraContent(
+                with: OverlayPanelView(model: hud)
+                    .frame(width: overlayWidth, alignment: alignment(for: hud.placement))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment(for: hud.placement))
+                    .padding(model.overlayConfiguration.cornerInset)
+            )
+            .scaleEffect(x: model.overlayConfiguration.mirrorsOutput ? -1 : 1, y: 1)
+            .clipShape(
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 10,
+                    bottomLeadingRadius: 0,
+                    bottomTrailingRadius: 0,
+                    topTrailingRadius: 10,
+                    style: .continuous
+                )
+            )
 
-                    Button(
-                        model.isCameraPreviewRunning ? "Stop Preview" : "Start Preview",
-                        systemImage: model.isCameraPreviewRunning ? "pause.circle" : "play.circle",
-                        action: togglePreview
-                    )
+            controlsBar
+        }
+        .background(Color(nsColor: .controlBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Color(nsColor: .separatorColor))
+        )
+    }
 
-                    Picker("Preview Format", selection: $model.previewAspect) {
-                        ForEach(OverlayPreviewAspect.allCases, id: \.self) { aspect in
-                            Text(aspect.title).tag(aspect)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 170)
-                }
-
-                ZStack(alignment: .bottomLeading) {
-                    CameraPreviewView(session: model.cameraPreviewSession)
-                        .frame(maxWidth: model.previewAspect.maxWidth)
-                        .aspectRatio(model.previewAspect.ratio, contentMode: .fit)
-                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .strokeBorder(.white.opacity(0.08))
-                        )
-
-                    if !model.isCameraPreviewRunning {
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .fill(Color.black.opacity(0.72))
-                            .overlay(
-                                VStack(spacing: 8) {
+    @ViewBuilder
+    private func cameraContent(with hudOverlay: some View) -> some View {
+        // Fixed square container; 16:9 letterboxes inside it.
+        Color(nsColor: .windowBackgroundColor)
+            .aspectRatio(1, contentMode: .fill)
+            .fixedSize(horizontal: false, vertical: true)
+            .overlay {
+                Group {
+                    if model.isCameraPreviewRunning {
+                        CameraPreviewView(session: model.cameraPreviewSession)
+                    } else {
+                        Rectangle()
+                            .fill(Color(nsColor: .windowBackgroundColor))
+                            .overlay {
+                                VStack(spacing: 6) {
                                     Image(systemName: "video.slash")
-                                        .font(.system(size: 28, weight: .semibold))
-                                    Text("Camera preview is not running")
-                                        .font(.headline)
+                                        .font(.title2)
+                                    Text("Camera preview is off")
+                                        .font(.subheadline)
                                 }
-                                .foregroundStyle(.white.opacity(0.9))
-                            )
+                                .foregroundStyle(.secondary)
+                            }
                     }
-
-                    Text(model.cameraPreviewStatus)
-                        .font(.callout)
-                        .foregroundStyle(.white.opacity(0.92))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(.ultraThinMaterial.opacity(0.92))
-                        .clipShape(Capsule())
-                        .padding(18)
                 }
-                .frame(maxWidth: .infinity)
-
-                Text("Choose the physical camera here. The virtual camera extension will use the same selection when a call app starts the stream.")
-                    .foregroundStyle(.secondary)
+                .aspectRatio(model.previewAspect.ratio, contentMode: .fit)
+                .overlay { hudOverlay }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var controlsBar: some View {
+        HStack(spacing: 10) {
+            Picker("Camera", selection: $model.selectedCameraID) {
+                if model.availableCameras.isEmpty {
+                    Text("No Cameras").tag(nil as String?)
+                } else {
+                    ForEach(model.availableCameras) { camera in
+                        Text(camera.localizedName).tag(Optional(camera.id))
+                    }
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .frame(maxWidth: 220)
+            .disabled(model.availableCameras.isEmpty)
+            .onChange(of: model.selectedCameraID) { _, newValue in
+                model.selectCamera(id: newValue)
+            }
+
+            Picker("Format", selection: $model.previewAspect) {
+                ForEach(OverlayPreviewAspect.allCases, id: \.self) { aspect in
+                    Text(aspect.title).tag(aspect)
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.segmented)
+            .frame(width: 100)
+
+            Spacer()
+
+            Button {
+                model.toggleMirrorOutput()
+            } label: {
+                Image(systemName: "arrow.left.and.right.text.vertical")
+            }
+            .help(model.overlayConfiguration.mirrorsOutput ? "Unmirror" : "Mirror")
+
+            Button {
+                if model.isCameraPreviewRunning {
+                    model.stopCameraPreview()
+                } else {
+                    model.startCameraPreview()
+                }
+            } label: {
+                Image(systemName: model.isCameraPreviewRunning ? "pause.fill" : "play.fill")
+            }
+            .help(model.isCameraPreviewRunning ? "Stop preview" : "Start preview")
+        }
+        .controlSize(.small)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    private var overlayWidth: CGFloat {
+        switch model.previewAspect {
+        case .square:
+            220
+        case .widescreen:
+            260
         }
     }
 
-    private func togglePreview() {
-        if model.isCameraPreviewRunning {
-            model.stopCameraPreview()
-        } else {
-            model.startCameraPreview()
+    private func alignment(for placement: OverlayPlacement) -> Alignment {
+        switch placement {
+        case .topLeading: .topLeading
+        case .topTrailing: .topTrailing
+        case .bottomLeading: .bottomLeading
+        case .bottomCenter: .bottom
+        case .bottomTrailing: .bottomTrailing
         }
     }
 }

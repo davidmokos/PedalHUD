@@ -7,9 +7,9 @@ struct RideOverlayMacApp: App {
     var body: some Scene {
         Window("Ride Overlay", id: "dashboard") {
             DashboardView(model: model)
-                .frame(minWidth: 1080, minHeight: 760)
+                .frame(width: 580)
         }
-        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
     }
 }
 

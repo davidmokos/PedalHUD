@@ -567,9 +567,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		E443DE882F5DADBF00E9209A /* XCLocalSwiftPackageReference "../../belgrade" */ = {
+		E443DE882F5DADBF00E9209A /* XCLocalSwiftPackageReference ".." */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../belgrade;
+			relativePath = ..;
 		};
 /* End XCLocalSwiftPackageReference section */
 
