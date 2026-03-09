@@ -15,6 +15,7 @@ final class RideOverlayAppModel {
     var cameraPreviewStatus = "Grant camera access to preview and choose a camera"
     var availableCameras: [CameraDeviceOption] = []
     var selectedCameraID: String?
+    var previewAspect = OverlayPreviewAspect.square
     var isCameraPreviewRunning = false
 
     @ObservationIgnored private let metricsWriter: SharedMetricsWriter

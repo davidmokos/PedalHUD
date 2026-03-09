@@ -1,3 +1,4 @@
+import RideOverlayCore
 import SwiftUI
 
 struct CameraPreviewCard: View {
@@ -30,12 +31,20 @@ struct CameraPreviewCard: View {
                         systemImage: model.isCameraPreviewRunning ? "pause.circle" : "play.circle",
                         action: togglePreview
                     )
+
+                    Picker("Preview Format", selection: $model.previewAspect) {
+                        ForEach(OverlayPreviewAspect.allCases, id: \.self) { aspect in
+                            Text(aspect.title).tag(aspect)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 170)
                 }
 
                 ZStack(alignment: .bottomLeading) {
                     CameraPreviewView(session: model.cameraPreviewSession)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 320)
+                        .frame(maxWidth: model.previewAspect.maxWidth)
+                        .aspectRatio(model.previewAspect.ratio, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -65,6 +74,7 @@ struct CameraPreviewCard: View {
                         .clipShape(Capsule())
                         .padding(18)
                 }
+                .frame(maxWidth: .infinity)
 
                 Text("Choose the physical camera here. The virtual camera extension will use the same selection when a call app starts the stream.")
                     .foregroundStyle(.secondary)

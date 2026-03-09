@@ -7,6 +7,7 @@ struct MetricsPreviewCard: View {
     let configuration: OverlayConfiguration
     let session: AVCaptureSession
     let isCameraPreviewRunning: Bool
+    let previewAspect: OverlayPreviewAspect
 
     private let builder = OverlayHUDModelBuilder()
 
@@ -18,7 +19,8 @@ struct MetricsPreviewCard: View {
                 previewBackground
 
                 OverlayPanelView(model: hud)
-                    .frame(width: 290)
+                    .frame(width: overlayWidth)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(panelPadding(for: hud.placement, inset: configuration.cornerInset))
             }
             .scaleEffect(x: configuration.mirrorsOutput ? -1 : 1, y: 1)
@@ -29,7 +31,8 @@ struct MetricsPreviewCard: View {
     private var previewBackground: some View {
         if isCameraPreviewRunning {
             CameraPreviewView(session: session)
-                .frame(height: 320)
+                .frame(maxWidth: previewAspect.maxWidth)
+                .aspectRatio(previewAspect.ratio, contentMode: .fit)
                 .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -63,7 +66,17 @@ struct MetricsPreviewCard: View {
                     .foregroundStyle(.white.opacity(0.88))
                     .padding(24)
                 )
-                .frame(height: 320)
+                .frame(maxWidth: previewAspect.maxWidth)
+                .aspectRatio(previewAspect.ratio, contentMode: .fit)
+        }
+    }
+
+    private var overlayWidth: CGFloat {
+        switch previewAspect {
+        case .square:
+            250
+        case .widescreen:
+            300
         }
     }
 

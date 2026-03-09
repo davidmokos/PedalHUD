@@ -9,9 +9,7 @@ public struct OverlayPanelView: View {
 
     public var body: some View {
         HStack(spacing: 10) {
-            OverlayStatusBadgeView(freshness: model.freshness)
-
-            OverlayHeroMetricView(item: heroItem)
+            OverlayHeroMetricView(item: heroItem, freshness: model.freshness)
                 .layoutPriority(1)
 
             ForEach(secondaryItems) { item in
@@ -38,6 +36,7 @@ public struct OverlayPanelView: View {
                 .strokeBorder(.white.opacity(0.12))
         )
         .shadow(color: .black.opacity(0.28), radius: 22, y: 12)
+        .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(model.accessibilityLabel)
     }

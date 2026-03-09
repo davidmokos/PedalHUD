@@ -25,6 +25,7 @@ struct OverlayMetricChipView: View {
                     .font(.system(.caption2, design: .rounded).weight(.bold))
                     .tracking(1)
                     .foregroundStyle(.white.opacity(0.62))
+                    .lineLimit(1)
 
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text(item.displayValue)
@@ -38,6 +39,7 @@ struct OverlayMetricChipView: View {
                         Text(unit)
                             .font(.system(.caption, design: .rounded).weight(.bold))
                             .foregroundStyle(.white.opacity(0.72))
+                            .lineLimit(1)
                     }
                 }
             }
@@ -55,5 +57,6 @@ struct OverlayMetricChipView: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .strokeBorder(.white.opacity(0.08))
         )
+        .fixedSize(horizontal: false, vertical: true)
     }
 }

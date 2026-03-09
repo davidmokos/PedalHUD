@@ -19,7 +19,8 @@ struct DashboardView: View {
                     metrics: model.currentMetrics,
                     configuration: model.overlayConfiguration,
                     session: model.cameraPreviewSession,
-                    isCameraPreviewRunning: model.isCameraPreviewRunning
+                    isCameraPreviewRunning: model.isCameraPreviewRunning,
+                    previewAspect: model.previewAspect
                 )
                 SetupChecklistCard(model: model)
             }

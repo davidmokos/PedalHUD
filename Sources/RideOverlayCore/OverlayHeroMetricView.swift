@@ -2,6 +2,7 @@ import SwiftUI
 
 struct OverlayHeroMetricView: View {
     let item: OverlayHUDModel.Item
+    let freshness: MetricFreshness
 
     var body: some View {
         ZStack {
@@ -29,9 +30,16 @@ struct OverlayHeroMetricView: View {
                 .blendMode(.screen)
 
             VStack(alignment: .leading, spacing: 7) {
-                Label(item.shortLabel, systemImage: item.symbolName)
-                    .font(.system(.caption2, design: .rounded).weight(.bold))
-                    .foregroundStyle(.white.opacity(0.82))
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(freshnessColor)
+                        .frame(width: 7, height: 7)
+
+                    Label(item.shortLabel, systemImage: item.symbolName)
+                        .font(.system(.caption2, design: .rounded).weight(.bold))
+                        .foregroundStyle(.white.opacity(0.82))
+                        .lineLimit(1)
+                }
 
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                     Text(item.displayValue)
@@ -58,5 +66,16 @@ struct OverlayHeroMetricView: View {
                 .strokeBorder(.white.opacity(0.16))
         )
         .shadow(color: .black.opacity(0.2), radius: 14, y: 8)
+    }
+
+    private var freshnessColor: Color {
+        switch freshness {
+        case .live:
+            Color(red: 0.09, green: 0.78, blue: 0.42)
+        case .aging:
+            Color(red: 0.95, green: 0.66, blue: 0.12)
+        case .stale:
+            Color(red: 0.95, green: 0.27, blue: 0.22)
+        }
     }
 }
