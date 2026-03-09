@@ -29,11 +29,12 @@ jobs:
       - name: Build
         run: |
           xcodebuild \
-            -project RideOverlay/RideOverlay.xcodeproj \
-            -scheme RideOverlay \
+            -project PedalHUD/PedalHUD.xcodeproj \
+            -scheme PedalHUD \
             -configuration Debug \
             -destination 'platform=macOS' \
             -derivedDataPath .build/xcode \
             CODE_SIGN_IDENTITY=- \
             CODE_SIGNING_REQUIRED=NO \
+            MACOSX_DEPLOYMENT_TARGET=15.0 \
             build

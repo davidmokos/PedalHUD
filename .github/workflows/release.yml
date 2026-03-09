@@ -49,28 +49,29 @@ jobs:
       - name: Resolve packages
         run: |
           xcodebuild -resolvePackageDependencies \
-            -project RideOverlay/RideOverlay.xcodeproj \
-            -scheme RideOverlay
+            -project PedalHUD/PedalHUD.xcodeproj \
+            -scheme PedalHUD
 
       - name: Build release
         run: |
           xcodebuild \
-            -project RideOverlay/RideOverlay.xcodeproj \
-            -scheme RideOverlay \
+            -project PedalHUD/PedalHUD.xcodeproj \
+            -scheme PedalHUD \
             -configuration Release \
             -destination 'platform=macOS' \
             -derivedDataPath .build/xcode \
             -allowProvisioningUpdates \
             MARKETING_VERSION="${{ steps.version.outputs.version }}" \
             CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
+            MACOSX_DEPLOYMENT_TARGET=15.0 \
             build
 
       - name: Prepare app for distribution
         id: prepare
         run: |
-          APP_PATH=".build/xcode/Build/Products/Release/RideOverlay.app"
-          ZIP_NAME="RideOverlay-${{ steps.version.outputs.version }}.zip"
-          DMG_NAME="RideOverlay-${{ steps.version.outputs.version }}.dmg"
+          APP_PATH=".build/xcode/Build/Products/Release/PedalHUD.app"
+          ZIP_NAME="PedalHUD-${{ steps.version.outputs.version }}.zip"
+          DMG_NAME="PedalHUD-${{ steps.version.outputs.version }}.dmg"
 
           # Create ZIP for Sparkle
           ditto -c -k --keepParent "$APP_PATH" "$ZIP_NAME"
@@ -124,7 +125,7 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           BUILD="${{ steps.version.outputs.build }}"
           ZIP_NAME="${{ steps.prepare.outputs.zip_name }}"
-          DOWNLOAD_URL="https://github.com/davidmokos/wahoo-webcam/releases/download/v${VERSION}/${ZIP_NAME}"
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/${ZIP_NAME}"
           PUB_DATE=$(date -R)
 
           python3 -c "
@@ -132,8 +133,8 @@ jobs:
           xml = '''<?xml version=\"1.0\" encoding=\"utf-8\"?>
           <rss version=\"2.0\" xmlns:sparkle=\"http://www.andymatuschak.org/xml-namespaces/sparkle\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\">
             <channel>
-              <title>Ride Overlay</title>
-              <link>https://github.com/davidmokos/wahoo-webcam/releases</link>
+              <title>PedalHUD</title>
+              <link>https://github.com/davidmokos/pedalhud/releases</link>
               <description>Most recent changes with links to updates.</description>
               <language>en</language>
               <item>
@@ -165,13 +166,13 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "Ride Overlay v${{ steps.version.outputs.version }}"
+          name: "PedalHUD v${{ steps.version.outputs.version }}"
           body: |
-            ## Ride Overlay v${{ steps.version.outputs.version }}
+            ## PedalHUD v${{ steps.version.outputs.version }}
 
             ### Installation
             1. Download `${{ steps.prepare.outputs.zip_name }}`
-            2. Unzip and drag **RideOverlay.app** to your Applications folder
+            2. Unzip and drag **PedalHUD.app** to your Applications folder
             3. Future updates will be delivered automatically via Sparkle
 
             ---

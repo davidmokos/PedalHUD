@@ -1,9 +1,9 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.0
 
 import PackageDescription
 
 let package = Package(
-    name: "RideOverlay",
+    name: "PedalHUD",
     platforms: [
         .macOS(.v13),
         .iOS(.v16),
@@ -11,17 +11,17 @@ let package = Package(
     ],
     products: [
         .library(
-            name: "RideOverlayCore",
-            targets: ["RideOverlayCore"]
+            name: "PedalHUDCore",
+            targets: ["PedalHUDCore"]
         ),
     ],
     targets: [
         .target(
-            name: "RideOverlayCore"
+            name: "PedalHUDCore"
         ),
         .testTarget(
-            name: "RideOverlayCoreTests",
-            dependencies: ["RideOverlayCore"]
+            name: "PedalHUDCoreTests",
+            dependencies: ["PedalHUDCore"]
         ),
     ]
 )

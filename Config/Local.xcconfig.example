@@ -2,4 +2,4 @@
 // Local.xcconfig is gitignored and will not be committed.
 
 DEVELOPMENT_TEAM = YOUR_APPLE_TEAM_ID
-BUNDLE_ID_PREFIX = com.yourcompany.trainercast
+BUNDLE_ID_PREFIX = com.yourcompany.pedalhud

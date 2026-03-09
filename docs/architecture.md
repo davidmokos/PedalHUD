@@ -60,7 +60,7 @@ Apple Watch -> iPhone relay -> macOS app -> App Group metrics file -> camera ext
 
 ## Why the shared core exists
 
-`RideOverlayCore` is meant to be imported by all Apple targets so they share:
+`PedalHUDCore` is meant to be imported by all Apple targets so they share:
 
 - the live metric model
 - transport payload encoding

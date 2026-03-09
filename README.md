@@ -1,40 +1,47 @@
-# Ride Overlay
+# PedalHUD
 
-Ride Overlay is a starter scaffold for the project described in the attached brief: a macOS virtual camera that combines webcam video with live ride metrics from a Wahoo trainer and heart-rate source.
+A macOS virtual camera that overlays live cycling metrics — watts, heart rate, cadence — directly onto your webcam feed. Use it in Zoom, Google Meet, Slack, or any app that supports camera selection.
 
-This repository currently contains:
+## How it works
 
-- A compileable Swift package, `RideOverlayCore`, for shared metric models, transport payloads, overlay state, preview simulation, and file-backed metric sharing.
-- Xcode-ready source folders for:
-  - a macOS host app
-  - a CoreMediaIO camera extension
-  - an iPhone relay app
-  - a watchOS heart-rate app
-- plist and entitlement templates for the targets above
-- architecture and Xcode setup notes in [docs/architecture.md](/Users/davidmokos/conductor/workspaces/wahoo-webcam/belgrade/docs/architecture.md) and [docs/xcode-project-setup.md](/Users/davidmokos/conductor/workspaces/wahoo-webcam/belgrade/docs/xcode-project-setup.md)
+PedalHUD connects to your Wahoo trainer and heart-rate sensor via Bluetooth, composites real-time metrics over your webcam video, and exposes the result as a system-level virtual camera through a CoreMediaIO camera extension.
 
-What is intentionally missing:
+## Getting started
 
-- An `.xcodeproj` or `.xcworkspace`. The workspace started empty, and no project generator such as `xcodegen` or `tuist` is installed locally.
-- The real BLE trainer integration, watch workout implementation, and physical camera capture path. The source layout is prepared for those next steps, but the current scaffold uses a simulated metric feed and a synthetic camera frame.
+### Prerequisites
 
-## Validate the shared core
+- macOS 15.0+
+- Xcode 16.2+
+
+### Build
+
+1. Clone the repository.
+2. Copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and fill in your Apple Team ID and bundle ID prefix.
+3. Open `PedalHUD/PedalHUD.xcodeproj` in Xcode.
+4. Build and run the **PedalHUD** scheme.
+
+### Validate the shared core
 
 ```bash
 swift test
 ```
 
-## Create the Apple targets in Xcode
+## Architecture
 
-1. Create a new Xcode project in this repository root.
-2. Add these targets:
-   - macOS App: `RideOverlayMac`
-   - Camera Extension: `RideOverlayCameraExtension`
-   - iOS App: `RideOverlayPhoneRelay`
-   - watchOS App: `RideOverlayWatchRelay`
-3. Add the local Swift package at the repository root.
-4. Attach the source folders under `Apps/` to the matching targets.
-5. Replace the placeholder bundle identifiers and app group names in the plist and entitlement files.
+The project is split into:
 
-The detailed target checklist is in [docs/xcode-project-setup.md](/Users/davidmokos/conductor/workspaces/wahoo-webcam/belgrade/docs/xcode-project-setup.md).
+- **PedalHUDCore** — shared Swift package with metric models, overlay rendering, and file-backed IPC.
+- **PedalHUD (macOS app)** — host app for BLE discovery, overlay controls, and system extension activation.
+- **PedalHUDCameraExtension** — CoreMediaIO camera extension that reads metrics and composites the HUD over webcam frames.
+- **PedalHUDPhoneRelay** — iOS app that relays heart-rate data from the watch to the Mac.
+- **PedalHUDWatchRelay** — watchOS app that streams live heart rate via `HKWorkoutSession`.
 
+See [docs/architecture.md](docs/architecture.md) for the full data flow.
+
+## Releases
+
+Tagged releases are built, signed, notarized, and published automatically via GitHub Actions. The app includes Sparkle for automatic updates.
+
+## License
+
+MIT

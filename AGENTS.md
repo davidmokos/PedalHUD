@@ -1,13 +1,12 @@
-# RideOverlay Agent Notes
+# PedalHUD Agent Notes
 
 Build and install from the repo root:
 
 ```bash
-cd /Users/davidmokos/conductor/workspaces/wahoo-webcam/belgrade
 swift test
 xcodebuild -allowProvisioningUpdates \
-  -project RideOverlay/RideOverlay.xcodeproj \
-  -scheme RideOverlay \
+  -project PedalHUD/PedalHUD.xcodeproj \
+  -scheme PedalHUD \
   -destination 'platform=macOS' \
   -derivedDataPath .build/xcode \
   build
@@ -16,14 +15,14 @@ xcodebuild -allowProvisioningUpdates \
 The built app will be at:
 
 ```text
-.build/xcode/Build/Products/Debug/RideOverlay.app
+.build/xcode/Build/Products/Debug/PedalHUD.app
 ```
 
 Copy the fresh build into `/Applications` before testing the virtual camera:
 
 ```bash
-rsync -a --delete '.build/xcode/Build/Products/Debug/RideOverlay.app/' '/Applications/RideOverlay.app/'
-open -n /Applications/RideOverlay.app
+rsync -a --delete '.build/xcode/Build/Products/Debug/PedalHUD.app/' '/Applications/PedalHUD.app/'
+open -n /Applications/PedalHUD.app
 ```
 
 Use the `/Applications` copy, not the Xcode-run copy, when testing:
@@ -36,13 +35,13 @@ Why: the camera extension must be embedded inside the installed app bundle, and 
 
 If you change the virtual camera or shared overlay rendering code, macOS may keep serving an older system extension unless the versions are bumped first. When changing either of these areas:
 
-- [Apps/RideOverlayCameraExtension](/Users/davidmokos/conductor/workspaces/wahoo-webcam/belgrade/Apps/RideOverlayCameraExtension)
-- [Sources/RideOverlayCore](/Users/davidmokos/conductor/workspaces/wahoo-webcam/belgrade/Sources/RideOverlayCore) if the change affects rendered output or extension behavior
+- `Apps/PedalHUDCameraExtension`
+- `Sources/PedalHUDCore` if the change affects rendered output or extension behavior
 
 bump both of these files together:
 
-- [RideOverlayMac-Info.plist](/Users/davidmokos/conductor/workspaces/wahoo-webcam/belgrade/Apps/RideOverlayMac/Resources/RideOverlayMac-Info.plist)
-- [Info.plist](/Users/davidmokos/conductor/workspaces/wahoo-webcam/belgrade/Apps/RideOverlayCameraExtension/Resources/Info.plist)
+- `Apps/PedalHUDMac/Resources/PedalHUD-Info.plist`
+- `Apps/PedalHUDCameraExtension/Resources/Info.plist`
 
 Useful checks:
 
