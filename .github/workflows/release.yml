@@ -125,11 +125,27 @@ jobs:
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          xcrun notarytool submit "${{ steps.prepare.outputs.zip_name }}" \
+          SUBMISSION=$(xcrun notarytool submit "${{ steps.prepare.outputs.zip_name }}" \
             --apple-id "$APPLE_ID" \
             --password "$APPLE_ID_PASSWORD" \
             --team-id "$APPLE_TEAM_ID" \
-            --wait
+            --wait --output-format json)
+
+          echo "$SUBMISSION"
+          STATUS=$(echo "$SUBMISSION" | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+          SUBMISSION_ID=$(echo "$SUBMISSION" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+
+          if [ "$STATUS" != "Accepted" ]; then
+            echo "Notarization failed with status: $STATUS"
+            echo "Fetching notarization log..."
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --apple-id "$APPLE_ID" \
+              --password "$APPLE_ID_PASSWORD" \
+              --team-id "$APPLE_TEAM_ID" \
+              notarization-log.json
+            cat notarization-log.json
+            exit 1
+          fi
 
           # Staple the notarization ticket to the app
           xcrun stapler staple "${{ steps.prepare.outputs.app_path }}"
