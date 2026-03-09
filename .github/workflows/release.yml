@@ -94,6 +94,8 @@ jobs:
         run: |
           APP_PATH=".build/PedalHUD.xcarchive/Products/Applications/PedalHUD.app"
           IDENTITY="Developer ID Application: DCTR Inc. (${{ secrets.APPLE_TEAM_ID }})"
+          MAIN_ENTITLEMENTS="Apps/PedalHUDMac/Resources/PedalHUD.entitlements"
+          EXT_ENTITLEMENTS="Apps/PedalHUDCameraExtension/Resources/PedalHUDCameraExtension.entitlements"
 
           # Sign all standalone executables inside frameworks (e.g., Sparkle's Autoupdate)
           find "$APP_PATH" -type f -perm +111 | while read binary; do
@@ -115,16 +117,27 @@ jobs:
             if [ "$component" = "$APP_PATH" ]; then
               continue
             fi
+
+            # Pass the correct entitlements for each bundle type
+            ENTITLEMENTS_FLAG=""
+            if [[ "$component" == *.systemextension ]]; then
+              ENTITLEMENTS_FLAG="--entitlements $EXT_ENTITLEMENTS"
+            fi
+
             echo "Signing bundle: $component"
-            codesign --force --options runtime --timestamp --sign "$IDENTITY" "$component"
+            codesign --force --options runtime --timestamp --sign "$IDENTITY" $ENTITLEMENTS_FLAG "$component"
           done
 
-          # Sign the main app last
+          # Sign the main app last — with its entitlements to preserve sandbox, camera, bluetooth, system-extension.install
           echo "Signing main app: $APP_PATH"
-          codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP_PATH"
+          codesign --force --options runtime --timestamp --sign "$IDENTITY" --entitlements "$MAIN_ENTITLEMENTS" "$APP_PATH"
 
           echo "Verifying signature..."
           codesign --verify --deep --strict "$APP_PATH"
+
+          # Dump entitlements to confirm they're embedded
+          echo "Main app entitlements:"
+          codesign -d --entitlements :- "$APP_PATH"
 
           ZIP_NAME="PedalHUD-${{ steps.version.outputs.version }}.zip"
           ditto -c -k --keepParent "$APP_PATH" "$ZIP_NAME"
@@ -166,6 +179,24 @@ jobs:
           # Re-create the ZIP after stapling
           rm "${{ steps.prepare.outputs.zip_name }}"
           ditto -c -k --keepParent "${{ steps.prepare.outputs.app_path }}" "${{ steps.prepare.outputs.zip_name }}"
+
+      - name: Create DMG
+        id: dmg
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DMG_NAME="PedalHUD-${VERSION}.dmg"
+
+          mkdir -p dmg_staging
+          cp -R "${{ steps.prepare.outputs.app_path }}" dmg_staging/
+          ln -s /Applications dmg_staging/Applications
+
+          hdiutil create -volname "PedalHUD" \
+            -srcfolder dmg_staging \
+            -ov -format UDZO \
+            "$DMG_NAME"
+
+          rm -rf dmg_staging
+          echo "dmg_name=$DMG_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Sign update with Sparkle EdDSA key
         id: sparkle_sign
@@ -242,13 +273,14 @@ jobs:
             ## PedalHUD v${{ steps.version.outputs.version }}
 
             ### Installation
-            1. Download `${{ steps.prepare.outputs.zip_name }}`
-            2. Unzip and drag **PedalHUD.app** to your Applications folder
+            1. Download **`${{ steps.dmg.outputs.dmg_name }}`**
+            2. Open the DMG and drag **PedalHUD.app** to your Applications folder
             3. Future updates will be delivered automatically via Sparkle
 
             ---
             _Built from ${{ github.sha }}_
           files: |
+            ${{ steps.dmg.outputs.dmg_name }}
             ${{ steps.prepare.outputs.zip_name }}
             appcast.xml
           draft: false
