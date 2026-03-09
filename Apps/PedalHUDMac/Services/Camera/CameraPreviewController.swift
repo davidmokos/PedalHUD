@@ -5,10 +5,10 @@ import Foundation
 final class CameraPreviewController {
     var onStateChange: ((String, Bool) -> Void)?
 
-    let session = AVCaptureSession()
+    nonisolated(unsafe) let session = AVCaptureSession()
 
     private let sessionQueue = DispatchQueue(label: "PedalHUDMac.CameraPreviewController")
-    private var currentInput: AVCaptureDeviceInput?
+    private nonisolated(unsafe) var currentInput: AVCaptureDeviceInput?
 
     func startPreview(cameraID: String?) {
         guard let device = CameraDeviceCatalog.device(for: cameraID) else {
@@ -62,7 +62,7 @@ final class CameraPreviewController {
         }
     }
 
-    private func configureSession(for device: AVCaptureDevice) throws {
+    private nonisolated func configureSession(for device: AVCaptureDevice) throws {
         if currentInput?.device.uniqueID == device.uniqueID {
             return
         }
