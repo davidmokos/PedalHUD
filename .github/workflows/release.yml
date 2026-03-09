@@ -68,7 +68,7 @@ jobs:
             -project PedalHUD/PedalHUD.xcodeproj \
             -scheme PedalHUD \
             -configuration Release \
-            -destination 'platform=macOS,arch=arm64' \
+            -destination 'generic/platform=macOS' \
             -archivePath .build/PedalHUD.xcarchive \
             -allowProvisioningUpdates \
             -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8 \
@@ -78,7 +78,9 @@ jobs:
             CURRENT_PROJECT_VERSION="${{ steps.version.outputs.build }}" \
             MACOSX_DEPLOYMENT_TARGET=15.0 \
             DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
-            BUNDLE_ID_PREFIX="$BUNDLE_ID_PREFIX"
+            BUNDLE_ID_PREFIX="$BUNDLE_ID_PREFIX" \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=NO
 
       - name: Export for Developer ID distribution
         id: prepare
