@@ -9,3 +9,7 @@ Config/profiles/
 *.provisionprofile
 *.p12
 *.p8
+PedalHUD-*.dmg
+PedalHUD-*.zip
+appcast.xml
+notarization-log.json

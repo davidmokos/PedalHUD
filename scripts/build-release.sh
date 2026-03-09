@@ -15,6 +15,7 @@ cd "$PROJECT_DIR"
 APP_PATH=".build/PedalHUD.xcarchive/Products/Applications/PedalHUD.app"
 ZIP_NAME="PedalHUD-${VERSION}.zip"
 DMG_NAME="PedalHUD-${VERSION}.dmg"
+APPCAST_NAME="appcast.xml"
 MAIN_ENTITLEMENTS="Apps/PedalHUDMac/Resources/PedalHUD.entitlements"
 EXT_ENTITLEMENTS="Apps/PedalHUDCameraExtension/Resources/PedalHUDCameraExtension.entitlements"
 
@@ -134,7 +135,48 @@ xcrun stapler staple "$APP_PATH"
 rm "$ZIP_NAME"
 ditto -c -k --keepParent "$APP_PATH" "$ZIP_NAME"
 
-# ── Step 7: Create DMG ─────────────────────────────────────────
+# ── Step 7: Generate Sparkle appcast ───────────────────────────
+echo "==> Generating appcast..."
+SIGN_UPDATE=$(find .build -name "sign_update" -type f | head -1)
+
+if [ -z "$SIGN_UPDATE" ]; then
+    echo "sign_update not found in build artifacts, downloading Sparkle tools..."
+    SPARKLE_TAG=$(curl -sI "https://github.com/sparkle-project/Sparkle/releases/latest" | grep -i "^location:" | sed 's/.*tag\///' | tr -d '\r\n')
+    curl -sL "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_TAG}/Sparkle-${SPARKLE_TAG#v}.tar.xz" -o /tmp/sparkle.tar.xz
+    mkdir -p /tmp/sparkle
+    tar xJ -C /tmp/sparkle -f /tmp/sparkle.tar.xz
+    SIGN_UPDATE=$(find /tmp/sparkle -name "sign_update" -type f | head -1)
+fi
+
+SPARKLE_SIGNATURE=$("$SIGN_UPDATE" "$ZIP_NAME")
+DOWNLOAD_URL="https://github.com/davidmokos/PedalHUD/releases/download/v${VERSION}/${ZIP_NAME}"
+PUB_DATE=$(date -R)
+
+cat > "$APPCAST_NAME" <<EOF
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>PedalHUD</title>
+    <link>https://github.com/davidmokos/PedalHUD/releases</link>
+    <description>Most recent changes with links to updates.</description>
+    <language>en</language>
+    <item>
+      <title>Version ${VERSION}</title>
+      <pubDate>${PUB_DATE}</pubDate>
+      <sparkle:version>${BUILD}</sparkle:version>
+      <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+      <enclosure
+        url="${DOWNLOAD_URL}"
+        ${SPARKLE_SIGNATURE}
+        type="application/octet-stream"
+      />
+    </item>
+  </channel>
+</rss>
+EOF
+
+# ── Step 8: Create DMG ─────────────────────────────────────────
 echo "==> Creating DMG..."
 rm -rf dmg_staging
 mkdir -p dmg_staging
@@ -152,6 +194,7 @@ echo ""
 echo "==> Build complete!"
 echo "  DMG: $PROJECT_DIR/$DMG_NAME"
 echo "  ZIP: $PROJECT_DIR/$ZIP_NAME"
+echo "  Appcast: $PROJECT_DIR/$APPCAST_NAME"
 echo ""
 echo "To create a GitHub release:"
-echo "  gh release create v${VERSION} '$DMG_NAME' '$ZIP_NAME' --title 'PedalHUD v${VERSION}'"
+echo "  gh release create v${VERSION} '$DMG_NAME' '$ZIP_NAME' '$APPCAST_NAME' --title 'PedalHUD v${VERSION}'"
