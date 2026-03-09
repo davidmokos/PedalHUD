@@ -68,7 +68,7 @@ jobs:
             -project PedalHUD/PedalHUD.xcodeproj \
             -scheme PedalHUD \
             -configuration Release \
-            -destination 'platform=macOS' \
+            -destination 'platform=macOS,arch=arm64' \
             -archivePath .build/PedalHUD.xcarchive \
             -allowProvisioningUpdates \
             -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8 \
