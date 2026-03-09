@@ -89,34 +89,31 @@ jobs:
             ARCHS=arm64 \
             ONLY_ACTIVE_ARCH=NO
 
-      - name: Export for Developer ID distribution
+      - name: Sign with Developer ID and package
         id: prepare
         run: |
-          cat > ExportOptions.plist << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key>
-            <string>developer-id</string>
-            <key>teamID</key>
-            <string>${{ secrets.APPLE_TEAM_ID }}</string>
-          </dict>
-          </plist>
-          PLIST
+          APP_PATH=".build/PedalHUD.xcarchive/Products/Applications/PedalHUD.app"
+          IDENTITY="Developer ID Application: DCTR Inc. (${{ secrets.APPLE_TEAM_ID }})"
 
-          xcodebuild -exportArchive \
-            -archivePath .build/PedalHUD.xcarchive \
-            -exportPath .build/export \
-            -exportOptionsPlist ExportOptions.plist \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APP_STORE_CONNECT_KEY_ID }}.p8 \
-            -authenticationKeyID ${{ secrets.APP_STORE_CONNECT_KEY_ID }} \
-            -authenticationKeyIssuerID ${{ secrets.APP_STORE_CONNECT_KEY_ISSUER_ID }}
+          # Find and sign all nested code first (frameworks, extensions, helpers)
+          find "$APP_PATH" -type d -name "*.framework" -o -name "*.systemextension" -o -name "*.xpc" -o -name "*.appex" | while read component; do
+            echo "Signing: $component"
+            codesign --force --options runtime --timestamp --sign "$IDENTITY" "$component"
+          done
 
-          APP_PATH=".build/export/PedalHUD.app"
+          # Sign all dylibs
+          find "$APP_PATH" -name "*.dylib" | while read lib; do
+            echo "Signing dylib: $lib"
+            codesign --force --options runtime --timestamp --sign "$IDENTITY" "$lib"
+          done
+
+          # Sign the main app
+          codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP_PATH"
+
+          echo "Verifying signature..."
+          codesign --verify --deep --strict "$APP_PATH"
+
           ZIP_NAME="PedalHUD-${{ steps.version.outputs.version }}.zip"
-
           ditto -c -k --keepParent "$APP_PATH" "$ZIP_NAME"
 
           echo "app_path=$APP_PATH" >> "$GITHUB_OUTPUT"
