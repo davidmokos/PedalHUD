@@ -30,20 +30,24 @@ struct OverlayHeroMetricView: View {
                 .blendMode(.screen)
 
             VStack(alignment: .leading, spacing: 7) {
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Circle()
                         .fill(freshnessColor)
                         .frame(width: 7, height: 7)
 
-                    Label(item.shortLabel, systemImage: item.symbolName)
-                        .font(.system(.caption2, design: .rounded).weight(.bold))
-                        .foregroundStyle(.white.opacity(0.82))
-                        .lineLimit(1)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(.black.opacity(0.18))
+                        .frame(width: 28, height: 28)
+                        .overlay(
+                            Image(systemName: item.symbolName)
+                                .font(.system(size: 13, weight: .black))
+                                .foregroundStyle(.white.opacity(0.94))
+                        )
                 }
 
                 HStack(alignment: .firstTextBaseline, spacing: 5) {
                     Text(item.displayValue)
-                        .font(.system(size: 34, weight: .black, design: .rounded))
+                        .font(.system(size: 40, weight: .black, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(.white)
                         .lineLimit(1)
@@ -66,6 +70,7 @@ struct OverlayHeroMetricView: View {
                 .strokeBorder(.white.opacity(0.16))
         )
         .shadow(color: .black.opacity(0.2), radius: 14, y: 8)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var freshnessColor: Color {

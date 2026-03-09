@@ -4,7 +4,7 @@ struct OverlayMetricChipView: View {
     let item: OverlayHUDModel.Item
 
     var body: some View {
-        HStack(spacing: 9) {
+        HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(
                     LinearGradient(
@@ -20,27 +20,19 @@ struct OverlayMetricChipView: View {
                         .foregroundStyle(.white)
                 )
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(item.title.uppercased())
-                    .font(.system(.caption2, design: .rounded).weight(.bold))
-                    .tracking(1)
-                    .foregroundStyle(.white.opacity(0.62))
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(item.displayValue)
+                    .font(.system(size: 30, weight: .heavy, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(.white)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.72)
 
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(item.displayValue)
-                        .font(.system(.title3, design: .rounded).weight(.heavy))
-                        .monospacedDigit()
-                        .foregroundStyle(.white)
+                if let unit = item.displayUnit {
+                    Text(unit)
+                        .font(.system(.caption, design: .rounded).weight(.bold))
+                        .foregroundStyle(.white.opacity(0.72))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-
-                    if let unit = item.displayUnit {
-                        Text(unit)
-                            .font(.system(.caption, design: .rounded).weight(.bold))
-                            .foregroundStyle(.white.opacity(0.72))
-                            .lineLimit(1)
-                    }
                 }
             }
 
