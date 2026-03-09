@@ -187,7 +187,7 @@ final class TrainerBluetoothClient: NSObject {
     }
 }
 
-extension TrainerBluetoothClient: CBCentralManagerDelegate {
+extension TrainerBluetoothClient: @preconcurrency CBCentralManagerDelegate {
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         updateState(centralStateDescription(central.state))
         onBluetoothStateChanged?(central.state == .poweredOn)
@@ -250,7 +250,7 @@ extension TrainerBluetoothClient: CBCentralManagerDelegate {
     }
 }
 
-extension TrainerBluetoothClient: CBPeripheralDelegate {
+extension TrainerBluetoothClient: @preconcurrency CBPeripheralDelegate {
     func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         if let error {
             updateState("Service discovery failed: \(error.localizedDescription)")
