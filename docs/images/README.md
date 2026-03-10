@@ -1,10 +1,11 @@
 # README Images
 
-This folder is for screenshots used in the repository README.
+This folder stores screenshots embedded in `README.md`.
 
-Suggested filenames:
+Current files:
 
-- `dashboard.png` — PedalHUD app window
-- `slack-call.png` — PedalHUD used in a real video call
+- `slack-call.jpg` - PedalHUD overlay used in a live call
 
-Once those files are added, they can be embedded in `README.md`.
+Planned additions:
+
+- `dashboard.png` - PedalHUD app window
