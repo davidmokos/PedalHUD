@@ -1,62 +1,39 @@
 # PedalHUD
 
-PedalHUD is a macOS virtual camera for cyclists. It takes a real webcam feed, overlays live ride data such as watts, heart rate, and cadence, and publishes the result as a camera you can select in Slack, Zoom, Google Meet, and other video apps.
+PedalHUD puts your watts and heart rate on camera.
+
+PedalHUD is a macOS app that connects to supported Bluetooth trainers and heart rate monitors, then publishes a virtual camera with live power and heart-rate overlays for Zoom, Google Meet, Slack, and other apps that support virtual cameras.
+
+![PedalHUD overlay in a Slack call](docs/images/slack-call.jpg)
 
 ## What It Does
 
-- Connects to a Wahoo trainer and heart-rate sensor over Bluetooth.
-- Composites ride metrics over a live webcam feed.
-- Publishes the composited output through a CoreMediaIO camera extension.
-- Lets you preview the feed locally before using it in a call.
-- Supports Sparkle in-app updates for installed builds.
-- Includes iPhone and Apple Watch relay targets for future/mobile heart-rate workflows.
+- Connects to supported Bluetooth trainers and heart rate monitors.
+- Composites live ride telemetry over a real webcam feed.
+- Publishes the result through a CoreMediaIO virtual camera extension.
+- Lets you preview the output locally before joining a call.
+- Supports signed releases with in-app Sparkle updates.
 
-## Screenshots
+## Download And Install
 
-Screenshots will live here once they are added:
+Download the latest signed release from [GitHub Releases](https://github.com/davidmokos/PedalHUD/releases/latest).
 
-- app dashboard screenshot
-- in-call screenshot from Slack / Meet / Zoom
+1. Download the latest archive.
+2. Move **PedalHUD.app** into `/Applications`.
+3. Open the app from `/Applications`.
+4. Grant Bluetooth and camera access when macOS prompts you.
+5. Click **Activate Virtual Camera**.
+6. Approve the system extension in **System Settings > Privacy & Security** if macOS asks.
+7. In Slack, Zoom, Meet, or another video app, choose **PedalHUD Camera** as your camera.
 
-Planned image paths:
-
-- `docs/images/dashboard.png`
-- `docs/images/slack-call.png`
+Installed builds use [Sparkle](https://sparkle-project.org) to check for updates from inside the app.
 
 ## Requirements
 
 - macOS 15.0 or newer
 - A supported webcam
-- A Wahoo trainer and/or heart-rate sensor for live ride metrics
-- Admin approval on first virtual-camera activation
-
-## Download
-
-Download the latest release from the [Releases page](https://github.com/davidmokos/PedalHUD/releases).
-
-1. Download `PedalHUD.app` from the latest release archive.
-2. Move **PedalHUD.app** into `/Applications`.
-3. Launch the app from `/Applications`.
-4. Use **Activate Virtual Camera** inside the app.
-
-PedalHUD uses [Sparkle](https://sparkle-project.org) for updates, so installed builds can check for new releases directly from the app.
-
-## Quick Start
-
-1. Open **PedalHUD** from `/Applications`.
-2. Grant Bluetooth and camera access when macOS prompts you.
-3. Pick your physical webcam in the app if needed.
-4. Connect your trainer and heart-rate sensor.
-5. Click **Activate Virtual Camera**.
-6. Approve the system extension in **System Settings > Privacy & Security** if macOS asks.
-7. Open Slack, Zoom, Meet, or another video app and choose **PedalHUD Camera** as the camera.
-
-## Troubleshooting
-
-- If virtual camera activation fails, make sure you launched the copy in `/Applications`, not an Xcode-run copy.
-- If the camera does not appear in video apps, restart PedalHUD first.
-- If macOS shows old extension versions waiting to uninstall, a reboot may be required.
-- If you changed extension-rendering code locally, bump the app and extension versions together before re-testing.
+- A supported Bluetooth trainer and/or heart-rate monitor
+- Admin approval during first-time virtual camera activation
 
 ## Build From Source
 
@@ -64,7 +41,7 @@ PedalHUD ships with a checked-in Xcode project and a Swift package for shared co
 
 ### Prerequisites
 
-- macOS 15.0+
+- macOS 15.0 or newer
 - Xcode 16.2 or newer
 - An Apple Developer account if you want to sign and activate the virtual camera locally
 
@@ -96,14 +73,12 @@ open -n /Applications/PedalHUD.app
 
 More detail lives in [docs/xcode-project-setup.md](docs/xcode-project-setup.md).
 
-## Project Layout
+## Repository Guide
 
-- `Sources/PedalHUDCore` — shared models, overlay rendering, app-group helpers, and shared configuration
-- `Apps/PedalHUDMac` — the macOS host app
-- `Apps/PedalHUDCameraExtension` — the CoreMediaIO virtual camera extension
-- `Apps/PedalHUDPhoneRelay` — iPhone relay app
-- `Apps/PedalHUDWatchRelay` — watchOS relay app
-- `docs/` — architecture, setup, and contributor documentation
+- `Apps/PedalHUDMac` - macOS host app
+- `Apps/PedalHUDCameraExtension` - CoreMediaIO virtual camera extension
+- `Sources/PedalHUDCore` - shared overlay, metrics, and configuration code
+- `docs/` - architecture, setup, and contributor documentation
 
 ## Documentation
 
@@ -113,13 +88,16 @@ More detail lives in [docs/xcode-project-setup.md](docs/xcode-project-setup.md).
 - [Security policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)
 
-## Releases
+## Troubleshooting
 
-Public releases are signed, notarized, and distributed through GitHub Releases. The repository also includes a local release script for maintainers that generates the DMG, ZIP, and Sparkle `appcast.xml`.
+- Launch and test the copy installed in `/Applications`, not an Xcode-run copy.
+- If the virtual camera does not appear in video apps, restart PedalHUD first.
+- If macOS shows old extension versions waiting to uninstall, reboot before testing again.
+- If you change extension-rendering code locally, bump the app and extension versions together before re-testing.
 
 ## Contributing
 
-Issues and pull requests are welcome. If you want to contribute code, start with [CONTRIBUTING.md](CONTRIBUTING.md).
+Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
