@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ── Configuration ──────────────────────────────────────────────
-VERSION="${1:?Usage: $0 <version> (e.g. 1.0.2)}"
+VERSION="${1:?Usage: $0 <version> (e.g. 1.0.0)}"
 BUILD="${2:-1}"
 IDENTITY="Developer ID Application: DCTR Inc. (7MXQUU6YV7)"
 TEAM_ID="7MXQUU6YV7"

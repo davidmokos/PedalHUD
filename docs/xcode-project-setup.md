@@ -1,64 +1,92 @@
-# Xcode Project Setup
+# Development Setup
 
-The repository contains source folders and resource templates, but no generated Xcode project.
+PedalHUD includes a checked-in Xcode project and a local Swift package. You do not need to generate the project yourself.
 
-## Targets
+## Prerequisites
 
-Create these targets:
+- macOS 15.0 or newer
+- Xcode 16.2 or newer
+- An Apple Developer account if you want to activate the virtual camera locally
 
-1. `PedalHUDMac`
-   - type: macOS App
-   - frameworks: `SwiftUI`, `AVFoundation`, `CoreBluetooth`, `SystemExtensions`
-   - local package dependency: `PedalHUDCore`
+## Local Configuration
 
-2. `PedalHUDCameraExtension`
-   - type: Camera Extension
-   - frameworks: `CoreMediaIO`, `CoreVideo`, `CoreImage`, `SwiftUI`
-   - local package dependency: `PedalHUDCore`
-   - embed in: `PedalHUDMac`
+Create `Config/Local.xcconfig` from the example file:
 
-3. `PedalHUDPhoneRelay`
-   - type: iOS App
-   - frameworks: `SwiftUI`, `WatchConnectivity`
-   - local package dependency: `PedalHUDCore`
-
-4. `PedalHUDWatchRelay`
-   - type: watchOS App
-   - frameworks: `SwiftUI`, `HealthKit`
-   - local package dependency: `PedalHUDCore`
-
-## App Group
-
-Replace every placeholder App Group with your real identifier, for example:
-
-```text
-group.com.yourcompany.pedalhud
+```bash
+cp Config/Local.xcconfig.example Config/Local.xcconfig
 ```
 
-The same App Group must be present in:
+Set:
 
-- the macOS app entitlements
-- the camera extension entitlements
-- any future XPC helper that shares metric state
+- `DEVELOPMENT_TEAM`
+- `BUNDLE_ID_PREFIX`
 
-## Bundle identifiers
+The shared app group is derived automatically from the bundle ID prefix:
 
-Replace the placeholders before signing:
+```text
+group.$(BUNDLE_ID_PREFIX)
+```
 
-- `com.example.PedalHUDMac`
-- `com.example.PedalHUDCameraExtension`
-- `com.example.PedalHUDPhoneRelay`
-- `com.example.PedalHUDWatchRelay`
+## Build
 
-## Recommended initial wiring order
+Run tests first:
 
-1. Create the macOS app target and attach everything under `Apps/PedalHUDMac/`.
-2. Create the camera extension target and attach everything under `Apps/PedalHUDCameraExtension/`.
-3. Add the entitlements and App Group to both macOS targets.
-4. Confirm the synthetic virtual camera appears in the system camera list.
-5. Create the iPhone and watch targets and attach their folders.
+```bash
+swift test
+```
 
-## Important implementation gap
+Build the macOS app:
 
-The extension currently renders a synthetic frame plus a metrics panel. That is deliberate for the first milestone. Once the virtual camera is stable, replace the synthetic background with a real camera capture source.
+```bash
+xcodebuild -allowProvisioningUpdates \
+  -project PedalHUD/PedalHUD.xcodeproj \
+  -scheme PedalHUD \
+  -destination 'platform=macOS' \
+  -derivedDataPath .build/xcode \
+  build
+```
 
+The built app will be here:
+
+```text
+.build/xcode/Build/Products/Debug/PedalHUD.app
+```
+
+## Test The Virtual Camera
+
+Use the installed app in `/Applications`, not the Xcode-run copy:
+
+```bash
+rsync -a --delete '.build/xcode/Build/Products/Debug/PedalHUD.app/' '/Applications/PedalHUD.app/'
+open -n /Applications/PedalHUD.app
+```
+
+Then test:
+
+1. **Activate Virtual Camera**
+2. macOS system-extension approval
+3. camera selection in Photo Booth / Slack / Zoom / Meet
+
+## Version Bumps For Extension Changes
+
+If you change either of these:
+
+- `Apps/PedalHUDCameraExtension`
+- `Sources/PedalHUDCore` when the change affects rendered output or extension behavior
+
+Then bump both version files together before testing:
+
+- `Apps/PedalHUDMac/Resources/PedalHUD-Info.plist`
+- `Apps/PedalHUDCameraExtension/Resources/Info.plist`
+
+This avoids macOS continuing to serve an older extension build.
+
+## Releasing
+
+The local maintainer release path is:
+
+```bash
+./scripts/build-release.sh <version> <build>
+```
+
+That script archives, re-signs, notarizes, staples, creates the DMG/ZIP, and generates `appcast.xml` for Sparkle.

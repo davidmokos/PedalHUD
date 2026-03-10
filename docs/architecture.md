@@ -1,86 +1,90 @@
 # Architecture
 
-## Goals
+PedalHUD has one job: take a real webcam feed, add live cycling metrics, and publish the result as a virtual camera that video apps can consume.
 
-- Read live ride metrics, primarily watts and heart rate.
-- Composite those metrics over a video feed.
-- Expose the result as a selectable virtual camera in Zoom, Meet, Slack, and similar apps.
-- Keep the BLE and workout concerns decoupled from the camera pipeline.
+## High-Level Components
 
-## Recommended shape
-
-### 1. macOS host app
+### `PedalHUD` macOS host app
 
 Responsibilities:
 
-- onboarding and permissions
-- BLE trainer discovery
-- preview window and overlay controls
-- system-extension activation
-- writing the latest metric snapshot into an App Group container
+- request camera and Bluetooth permissions
+- discover trainers and heart-rate peripherals
+- let the user preview the webcam and choose a preferred camera
+- manage overlay configuration
+- activate the system extension
+- write live metric snapshots into the shared App Group container
 
-### 2. CoreMediaIO camera extension
-
-Responsibilities:
-
-- publish a virtual camera stream
-- read the latest metric snapshot from the App Group container
-- composite a HUD over frames
-- eventually replace the current synthetic frame generator with a real webcam capture source
-
-### 3. iPhone relay app
+### `PedalHUDCameraExtension` CoreMediaIO extension
 
 Responsibilities:
 
-- receive heart-rate updates from watchOS
-- optionally read trainer data when Zwift is already using the same Mac
-- forward compact payloads to the Mac host app over the local network
+- capture frames from the selected physical webcam
+- read the latest metrics from the App Group container
+- composite the PedalHUD overlay over video frames
+- publish the resulting stream as `PedalHUD Camera`
 
-### 4. watchOS app
+### `PedalHUDCore` shared package
 
 Responsibilities:
 
-- start an `HKWorkoutSession`
-- collect live heart-rate samples
-- send updates to the iPhone relay
+- shared live-metric types
+- overlay rendering models and shared view code
+- app-group identifiers and file-backed stores
+- camera-selection and overlay-configuration persistence
 
-## Data flow
+### `PedalHUDPhoneRelay` iPhone app
 
-### Direct trainer path
+Responsibilities:
+
+- receive heart-rate data from watchOS
+- forward relay data toward the Mac host app
+
+### `PedalHUDWatchRelay` watchOS app
+
+Responsibilities:
+
+- run an `HKWorkoutSession`
+- collect live heart-rate data
+- forward samples to the iPhone relay
+
+## Data Flow
+
+### Direct Bluetooth path
 
 ```text
-Wahoo trainer -> macOS app -> App Group metrics file -> camera extension -> virtual camera
+Trainer / HR sensor -> macOS host app -> App Group metrics file -> camera extension -> virtual camera
 ```
 
 ### Watch relay path
 
 ```text
-Apple Watch -> iPhone relay -> macOS app -> App Group metrics file -> camera extension -> virtual camera
+Apple Watch -> iPhone relay -> macOS host app -> App Group metrics file -> camera extension -> virtual camera
 ```
 
-## Why the shared core exists
+## Key Design Choices
 
-`PedalHUDCore` is meant to be imported by all Apple targets so they share:
+- **App Group file-backed IPC** keeps the host app and camera extension loosely coupled.
+- **CoreMediaIO camera extension** exposes a system-level virtual camera that works across apps.
+- **Shared Swift package** keeps overlay logic, metric models, and persistence rules consistent across targets.
+- **Sparkle updates** are handled in the macOS app so installed builds can self-update.
 
-- the live metric model
-- transport payload encoding
-- overlay configuration
-- metric freshness rules
-- preview simulation
+## Operational Constraints
 
-That avoids each target inventing its own JSON, timestamps, or staleness logic.
+- The camera extension must be tested from an app bundle installed in `/Applications`.
+- Extension-facing behavior changes should be paired with a version bump in both macOS and extension `Info.plist` files.
+- macOS may keep old extension versions staged until restart or reboot.
 
-## Current scaffold decisions
+## Current State
 
-- The shared state is a file-backed JSON snapshot for simplicity.
-- The virtual camera emits synthetic frames first so the CMIO path is isolated from webcam capture complexity.
-- The host app uses a simulated metric feed first so the UI and pipeline can be validated before BLE is implemented.
+- The macOS app can preview a physical camera.
+- The camera extension captures from a physical webcam and publishes a composited virtual camera feed.
+- Trainer and heart-rate data flow through the shared metrics store into the overlay.
+- Sparkle update metadata is published through GitHub Releases appcast assets.
 
-## Next implementation steps
+## Future Improvements
 
-1. Replace `TrainerBluetoothClient` with FTMS / Cycling Power discovery and subscriptions.
-2. Replace the synthetic extension frame with real camera capture and pixel-buffer compositing.
-3. Add an HTTP or WebSocket receiver in the macOS app for iPhone relay messages.
-4. Implement watch workout start/stop and live heart-rate forwarding.
-5. Persist overlay placement and visual settings.
-
+1. Broaden BLE device support and recovery logic.
+2. Improve overlay customization and persistence.
+3. Finish and harden the phone/watch relay path.
+4. Expand automated testing around metrics freshness and rendering behavior.
