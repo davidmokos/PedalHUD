@@ -4,7 +4,7 @@ PedalHUD puts your watts and heart rate on camera.
 
 PedalHUD is a macOS app that connects to supported Bluetooth trainers and heart rate monitors, then publishes a virtual camera with live power and heart-rate overlays for Zoom, Google Meet, Slack, and other apps that support virtual cameras.
 
-![PedalHUD overlay in a Slack call](docs/images/slack-call.jpg)
+![PedalHUD app interface](docs/images/app-interface.png)
 
 ## What It Does
 
@@ -13,6 +13,17 @@ PedalHUD is a macOS app that connects to supported Bluetooth trainers and heart 
 - Publishes the result through a CoreMediaIO virtual camera extension.
 - Lets you preview the output locally before joining a call.
 - Supports signed releases with in-app Sparkle updates.
+
+## How To Use
+
+1. Open PedalHUD and select your webcam as the source camera.
+2. Connect your Bluetooth power meter and/or heart rate monitor using the dropdowns in the app.
+3. Click **Activate Virtual Camera** to register the virtual camera with macOS.
+4. In your video app (Slack, Zoom, Meet, etc.), choose **PedalHUD Camera** from the camera dropdown.
+
+![PedalHUD Camera selected in a Slack huddle](docs/images/camera-select.png)
+
+Your live power and heart rate overlay will now appear on your camera feed for everyone in the call.
 
 ## Download And Install
 
@@ -32,8 +43,7 @@ Installed builds use [Sparkle](https://sparkle-project.org) to check for updates
 
 - macOS 15.0 or newer
 - A supported webcam
-- A supported Bluetooth trainer and/or heart-rate monitor
-- Admin approval during first-time virtual camera activation
+- Bluetooth trainer (tested with Wahoo KICKR) and/or Bluetooth heart rate monitor — at least one is needed for a good experience
 
 ## Build From Source
 
