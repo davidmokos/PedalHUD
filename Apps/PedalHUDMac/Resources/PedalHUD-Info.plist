@@ -32,6 +32,8 @@
 	<string>idH1Tr88DF5UQ+04EY70cTtM3+WOIG7VTZnQePwtayY=</string>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
 	<key>PedalHUDAppGroup</key>
 	<string>$(APP_GROUP)</string>
 </dict>
